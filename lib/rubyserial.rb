@@ -14,8 +14,7 @@ case CONFIG['host_os']
     raise "windows not implemented"  
     #require 'rubyserial/windows'
    when /darwin/i
-    raise "osx not implemented"  
-    #require 'rubyserial/osx'
+    require 'rubyserial/osx'
    else
     raise "Unknown environment"  
 end
