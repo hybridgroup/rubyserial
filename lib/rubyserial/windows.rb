@@ -1,10 +1,6 @@
-require 'ffi'
-
 module RubySerial
- extend FFI::Library
-  ffi_lib FFI::Library::LIBC
 
-  class SerialPort
+  class WindowsSerialPort
     def initialize(address, baude_rate, data_bits)
       # implemtation here
     end 
