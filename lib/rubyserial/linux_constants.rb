@@ -1,11 +1,18 @@
-module RubySerial
-  module LinuxConstants
+require 'ffi'
 
+module RubySerial
+  module Posix
+  extend FFI::Library
+    ffi_lib FFI::Library::LIBC
+
+    NCCS = 19
     TCSETS = 0x5402
     IGNPAR = 0000004
     CREAD = 0000200
     CLOCAL = 0004000
     VMIN = 6
+    VTIME = 5
+    TCSANOW = 0
 
     DATA_BITS = {
       5 => 0000000,
@@ -48,5 +55,17 @@ module RubySerial
       4000000 => 0010017
     }
 
+    class Termios < FFI::Struct
+      layout  :c_iflag, :uint,
+              :c_oflag, :uint,
+              :c_cflag, :uint,
+              :c_lflag, :uint,
+              :c_line, :uchar,
+              :cc_c, [ :uchar, NCCS ],
+              :c_ispeed, :uint,
+              :c_ospeed, :uint
+    end
+
+    attach_function :tcsetattr, [ :int, :int, RubySerial::Posix::Termios ], :int
   end
 end

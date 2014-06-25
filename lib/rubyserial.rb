@@ -12,6 +12,13 @@ module RubySerial
   ffi_lib FFI::Library::LIBC
 end
 
-require 'rubyserial/termios'
-require 'rubyserial/generic'
-require 'rubyserial/serial'
+if CONFIG['host_os'] =~ /mswin|windows/i
+  require 'rubyserial/windows'
+else
+  if CONFIG['host_os'] =~ /linux/i
+    require 'rubyserial/linux_constants'
+  else
+    require 'rubyserial/osx_constants'
+  end
+  require 'rubyserial/posix'
+end
