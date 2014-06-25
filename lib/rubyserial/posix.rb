@@ -1,7 +1,7 @@
 class Serial
   def initialize(address, baude_rate=9600, data_bits=8)
     file_opts = File::RDWR | File::NOCTTY | File::NONBLOCK
-    @fd       = IO::sysopen(address, file_opts) 
+    @fd       = IO::sysopen(address, file_opts)
     @file     = IO.open(@fd, "r+")
     @config   = build_config(baude_rate, data_bits)
 
