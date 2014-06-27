@@ -5,6 +5,11 @@ module RubySerial
   extend FFI::Library
     ffi_lib FFI::Library::LIBC
 
+    O_RDWR = 0x0002
+    O_NOCTTY = 0x20000
+    O_NONBLOCK = 0x0004
+    F_GETFL = 3
+    F_SETFL = 4
     IGNPAR = 0x00000004
     VMIN = 16
     VTIME = 17
@@ -58,5 +63,10 @@ module RubySerial
     end
 
     attach_function :tcsetattr, [ :int, :int, RubySerial::Posix::Termios ], :int
+    attach_function :fcntl, [:int, :int, :varargs], :int
+    attach_function :open, [:pointer, :int], :int
+    attach_function :close, [:int], :int
+    attach_function :write, [:int, :pointer,  :int],:int
+    attach_function :read, [:int, :pointer,  :int],:int
   end
 end

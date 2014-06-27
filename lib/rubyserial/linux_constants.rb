@@ -5,14 +5,19 @@ module RubySerial
   extend FFI::Library
     ffi_lib FFI::Library::LIBC
 
-    NCCS = 19
+    O_NONBLOCK = 00004000
+    O_NOCTTY = 00000400
+    O_RDWR = 00000002
+    F_GETFL = 3
+    F_SETFL = 4
+    VTIME = 5
+    TCSANOW = 0
     TCSETS = 0x5402
     IGNPAR = 0000004
     CREAD = 0000200
     CLOCAL = 0004000
     VMIN = 6
-    VTIME = 5
-    TCSANOW = 0
+    NCCS = 19
 
     DATA_BITS = {
       5 => 0000000,
@@ -66,6 +71,12 @@ module RubySerial
               :c_ospeed, :uint
     end
 
+    attach_function :ioctl, [ :int, :ulong, RubySerial::Posix::Termios], :int
     attach_function :tcsetattr, [ :int, :int, RubySerial::Posix::Termios ], :int
+    attach_function :fcntl, [:int, :int, :varargs], :int
+    attach_function :open, [:pointer, :int], :int
+    attach_function :close, [:int], :int
+    attach_function :write, [:int, :pointer,  :int],:int
+    attach_function :read, [:int, :pointer,  :int],:int
   end
 end
