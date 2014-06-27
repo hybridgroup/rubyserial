@@ -157,12 +157,8 @@ module RubySerial
       103 => "ENOPOLICY", 
       104 => "ENOTRECOVERABLE", 
       105 => "EOWNERDEAD", 
-      106 => "ELAST"}
-
-
-
-
-
+      106 => "ELAST"
+    }
 
     class Termios < FFI::Struct
       layout  :c_iflag, :ulong,
