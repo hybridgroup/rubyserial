@@ -3,6 +3,11 @@ require 'rbconfig'
 require 'ffi'
 include RbConfig
 
+module RubySerial
+  class Exception < Exception
+  end
+end
+
 if CONFIG['host_os'] =~ /mswin|windows/i
   require 'rubyserial/windows'
 else

@@ -4,15 +4,29 @@ class Serial
   def initialize(address, baude_rate=9600, data_bits=8)
     file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY
     @fd = RubySerial::Posix.open(address, file_opts)
+
     if @fd == -1 
-      raise "Error opening file"
+      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
     else
       @open = true
     end
+
     fl = RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_GETFL, :int, 0)
-    RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_SETFL, :int, ~RubySerial::Posix::O_NONBLOCK & fl)
-    @config   = build_config(baude_rate, data_bits)
-    RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
+    if fl == -1 
+      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]    
+    end
+    
+    err = RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_SETFL, :int, ~RubySerial::Posix::O_NONBLOCK & fl)
+    if err == -1
+      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]    
+    end
+
+    @config = build_config(baude_rate, data_bits)
+
+    err = RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
+    if err == -1
+      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]    
+    end
   end
 
   def closed?
@@ -20,8 +34,12 @@ class Serial
   end
 
   def close
-    @open = false
-    RubySerial::Posix.close(@fd)
+    err = RubySerial::Posix.close(@fd)
+    if err == -1 
+      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
+    else
+      @open = false 
+    end
   end
 
   def write data
@@ -30,7 +48,7 @@ class Serial
       buff = FFI::MemoryPointer.from_string(data[n..-1].to_s)
       i = RubySerial::Posix.write(@fd, buff, buff.size)
       if i == -1 
-        puts "error writing"
+        raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
       else
         n = n+i
       end
@@ -38,11 +56,11 @@ class Serial
   end
 
   def read size
-      buff = FFI::MemoryPointer.new :char, size
-      i = RubySerial::Posix.read(@fd, buff, size)
-      if i == -1 
-        puts "error reading"
-      end
+    buff = FFI::MemoryPointer.new :char, size
+    i = RubySerial::Posix.read(@fd, buff, size)
+    if i == -1 
+      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
+    end
     return buff.get_bytes(0, i)
   end
 
