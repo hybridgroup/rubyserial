@@ -9,6 +9,7 @@ module RubySerial
 end
 
 if CONFIG['host_os'] =~ /mswin|windows|mingw/i
+  require 'rubyserial/windows_constants'
   require 'rubyserial/windows'
 else
   if CONFIG['host_os'] =~ /linux/i
