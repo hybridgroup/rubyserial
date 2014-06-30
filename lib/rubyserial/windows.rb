@@ -7,17 +7,18 @@ class Serial
     puts "FILE OPTS #{file_opts}"
     puts "ADDRESS #{address}"
     # @fd = IO::sysopen(address, file_opts * 0)
-    @serial = Win32::CreateFileA(address, file_opts, 0, nil, Win32::OPEN_EXISTING, Win32::FILE_ATTRIBUTE_NORMAL, nil)
+    @serial = Win32.CreateFileA(address, file_opts, 0, nil, Win32::OPEN_EXISTING, 0, nil)
     # @file = IO.open(@fd, "r+")
+    @open = true 
 
     DCB.new.tap do |p|  # check below for DCB struct definition
       p[:dcblength] = DCB::Sizeof
-      Win32::GetCommState @serial, p
-      p[:baudrate] = 9600
-      p[:bytesize] = 8
+      Win32.GetCommState @serial, p
+      p[:baudrate] = baude_rate
+      p[:bytesize] = data_bits
       p[:stopbits] = DCB::ONESTOPBIT
       p[:parity]   = DCB::NOPARITY
-      Win32::SetCommState @serial, p
+      Win32.SetCommState @serial, p
     end
 
     CommTimeouts.new.tap do |timeouts|
@@ -26,7 +27,7 @@ class Serial
       timeouts[:read_total_timeout_constant]    = 10
       timeouts[:write_total_timeout_multiplier] = 50
       timeouts[:write_total_timeout_constant]   = 10
-      Win32::SetCommTimeouts @serial, timeouts
+      Win32.SetCommTimeouts @serial, timeouts
     end
 
     @buffer = FFI::MemoryPointer.new :char, 1024
@@ -34,43 +35,39 @@ class Serial
     @report = false
   end
 
-  # def method_missing(method_name, *arguments, &block)
-  #   @file.send(method_name, *arguments, &block)
-  # end
-
-  def read(buffer_size)
-    puts "in the read method step 1"
-    grow_buffer(buffer_size)
-    puts "in the read method step 2"
-    Win32::ReadFile(@serial, @buffer, buffer_size, @count, nil)
-    puts "in the read method step 3"
-    bites = @buffer.read_bytes(@count.read_uint32)
-    puts "read bytes #{bites}"
-    bites
+  def read size
+    buff = FFI::MemoryPointer.new :char, size
+    count = FFI::MemoryPointer.new :uint, 1
+    i = Win32.ReadFile(@serial, buff, size, count, nil)
+    if i == 0 
+      puts "read failed #{i}"
+    end
+    return buff.get_bytes(0, count.read_uint32)
   end
 
-  def write(string)
-    command = "#{string}\r\n"
-    puts "writing command: #{command}"
-    grow_buffer command.length
-    @buffer.write_string(command)
-    Win32::WriteFile(@serial, @buffer, command.length, @count, nil)
-    @buffer.write_string "\0" #empty string buffer
+  def write data
+    buff = FFI::MemoryPointer.from_string(data.to_s)
+    count = FFI::MemoryPointer.new :uint, 1
+    i = Win32.WriteFile(@serial, buff, buff.size, count, nil)
+    if i == 0 
+      puts "write failed #{i}"
+    end
     puts "write count %i" % @count.read_uint32
   end
 
-  def grow_buffer(size)
-    @buffer = FFI::MemoryPointer.new :char, size
-  end
-
   def close
-    Win32::CloseHandle(@serial)
+    @open = false
+    Win32.CloseHandle(@serial)
+  end
+  def closed?
+    !@open
   end
 
   # wraps the native Windows API functions for file IO and COMM port found in kernel32.dll
   module Win32
     extend FFI::Library
-    ffi_lib 'kernel32.dll'
+    ffi_lib 'kernel32'
+    ffi_convention :stdcall
 
     [
       [ :GetLastError,    [],  :uint32],
