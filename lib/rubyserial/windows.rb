@@ -1,4 +1,5 @@
 require 'ffi'
+
 class Serial
   def initialize(address, baude_rate=9600, data_bits=8)
     # address = "\\\\.\\#{address}"

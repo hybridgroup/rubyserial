@@ -1,10 +1,11 @@
 $:.unshift(File.dirname(__FILE__))
-require 'rubyserial/serial'
 require 'rbconfig'
+require 'ffi'
 include RbConfig
 
-if RUBY_PLATFORM == 'java'
-  raise "Jruby not yet supported"
+module RubySerial
+  class Exception < Exception
+  end
 end
 
 if CONFIG['host_os'] =~ /mswin|windows|mingw/i
