@@ -64,15 +64,14 @@ module RubySerial
       ONESTOPBIT  = 0  #   not sure why necessary (different Windows versions ?)
       NOPARITY    = 0
     end
-  end
 
-
-  # this struct is used to set timeout properties of the opened COM ports
-  class CommTimeouts < FFI::Struct
-    layout  :read_interval_timeout,           :uint32,
-            :read_total_timeout_multiplier,   :uint32,
-            :read_total_timeout_constant,     :uint32,
-            :write_total_timeout_multiplier,  :uint32,
-            :write_total_timeout_constant,    :uint32
+    # this struct is used to set timeout properties of the opened COM ports
+    class CommTimeouts < FFI::Struct
+      layout  :read_interval_timeout,           :uint32,
+              :read_total_timeout_multiplier,   :uint32,
+              :read_total_timeout_constant,     :uint32,
+              :write_total_timeout_multiplier,  :uint32,
+              :write_total_timeout_constant,    :uint32
+    end
   end
 end
