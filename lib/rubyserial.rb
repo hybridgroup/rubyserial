@@ -7,14 +7,13 @@ if RUBY_PLATFORM == 'java'
   raise "Jruby not yet supported"
 end
 
-case CONFIG['host_os']
-   when /linux/i
-    require 'rubyserial/linux'
-   when /mswin|windows/i
-    raise "windows not implemented"  
-    #require 'rubyserial/windows'
-   when /darwin/i
-    require 'rubyserial/osx'
-   else
-    raise "Unknown environment"  
+if CONFIG['host_os'] =~ /mswin|windows|mingw/i
+  require 'rubyserial/windows'
+else
+  if CONFIG['host_os'] =~ /linux/i
+    require 'rubyserial/linux_constants'
+  else
+    require 'rubyserial/osx_constants'
+  end
+  require 'rubyserial/posix'
 end
