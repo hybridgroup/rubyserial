@@ -42,17 +42,17 @@ class Serial
 
   def read(size)
     buff = FFI::MemoryPointer.new :char, size
-    count = FFI::MemoryPointer.new :uint, 1
+    count = FFI::MemoryPointer.new :uint32, 1
     err = RubySerial::Win32.ReadFile(@fd, buff, size, count, nil)
     if err == 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
-    end 
-    buff.get_bytes(0, count.read_uint32)
+    end
+    buff.get_bytes(0, count.read_string.unpack('H4').join().to_i(16))
   end
 
   def write(data)
     buff = FFI::MemoryPointer.from_string(data.to_s)
-    count = FFI::MemoryPointer.new :uint, 1
+    count = FFI::MemoryPointer.new :uint32, 1
     err = RubySerial::Win32.WriteFile(@fd, buff, buff.size, count, nil)
     if err == 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
