@@ -2,7 +2,8 @@ require 'ffi'
 
 class Serial
   def initialize(address, baude_rate=9600, data_bits=8)
-    file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY
+    file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY |
+      RubySerial::Posix::O_NONBLOCK
     @fd = RubySerial::Posix.open(address, file_opts)
 
     if @fd == -1
