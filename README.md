@@ -28,6 +28,11 @@ Returns a string up to `length` long. It is not guaranteed to return the entire
 length specified, and will return an empty string if no data is
 available. Emits a `RubySerial::Exception` on error.
 
+**getbyte -> Fixnum or nil**
+
+Returns an 8 bit byte or nil if no data is available. 
+Emits a `RubySerial::Exception` on error.
+
 **RubySerial::Exception**
 
 A wrapper exception type, that returns the underlying system error code.
