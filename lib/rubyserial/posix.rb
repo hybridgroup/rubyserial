@@ -64,6 +64,20 @@ class Serial
     buff.get_bytes(0, i)
   end
 
+  def getbyte
+    buff = FFI::MemoryPointer.new :char, 1
+    i = RubySerial::Posix.read(@fd, buff, 1)
+    if i == -1
+      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
+    end
+
+    if i == 0
+      nil
+    else
+      buff.read_string.unpack('C').first
+    end
+  end
+
   private
 
   def build_config(baude_rate, data_bits)

@@ -2,6 +2,8 @@
 
 RubySerial is a simple RubyGem for reading from and writing to serial ports.
 
+[![Build Status](https://travis-ci.org/hybridgroup/rubyserial.svg)](https://travis-ci.org/hybridgroup/rubyserial)
+
 ## Installation
 
     $ gem install rubyserial
@@ -25,6 +27,11 @@ Emits a `RubySerial::Exception` on error.
 Returns a string up to `length` long. It is not guaranteed to return the entire
 length specified, and will return an empty string if no data is
 available. Emits a `RubySerial::Exception` on error.
+
+**getbyte -> Fixnum or nil**
+
+Returns an 8 bit byte or nil if no data is available. 
+Emits a `RubySerial::Exception` on error.
 
 **RubySerial::Exception**
 
