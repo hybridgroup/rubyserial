@@ -24,7 +24,7 @@ describe "basic reading and writing" do
     @sp = Serial.new(@ptys[0][0])
     @sp2.write('hello')
 
-    # It's being stupid so you have to put a small delay in so it can write to the other port.
+		# small delay so it can write to the other port.
     sleep 0.1
   end
 
