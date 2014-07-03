@@ -2,6 +2,8 @@
 
 RubySerial is a simple RubyGem for reading from and writing to serial ports.
 
+[![Build Status](https://travis-ci.org/hybridgroup/rubyserial.svg)](https://travis-ci.org/hybridgroup/rubyserial)
+
 ## Installation
 
     $ gem install rubyserial
