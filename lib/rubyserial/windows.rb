@@ -53,7 +53,7 @@ class Serial
   def getbyte
     buff = FFI::MemoryPointer.new :char, 1
     count = FFI::MemoryPointer.new :uint32, 1
-    err = RubySerial::Win32.ReadFile(@fd, buff, size, count, nil)
+    err = RubySerial::Win32.ReadFile(@fd, buff, 1, count, nil)
     if err == 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
