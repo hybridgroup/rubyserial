@@ -4,8 +4,8 @@ require "rubyserial/version"
 Gem::Specification.new do |s|
   s.name        = "rubyserial"
   s.version     = RubySerial::VERSION
-  s.summary     = "ffi ruby serialport gem"
-  s.description = "ffi ruby serialport gem"
+  s.summary     = "FFI Ruby library for RS-232 serial port communication"
+  s.description = "FFI Ruby library for RS-232 serial port communication"
   s.homepage    = "https://github.com/hybridgroup/rubyserial"
   s.authors     = ["Adrian Zankich", "Theron Boerner", "Javier Cervantes"]
   s.platform    = Gem::Platform::RUBY
