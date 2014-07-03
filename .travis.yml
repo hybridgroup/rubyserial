@@ -6,7 +6,7 @@ rvm:
   - ruby-head
   - jruby
   - jruby-head
-  - rbx
+  - rbx-2.2.10
 install:
   - sudo apt-get update && sudo apt-get install --force-yes socat
 script:
