@@ -16,7 +16,7 @@ class Serial
       err = RubySerial::Win32.GetCommState @fd, dcb
       if err == 0
         raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
-      end 
+      end
       dcb[:baudrate] = baude_rate
       dcb[:bytesize] = data_bits
       dcb[:stopbits] = RubySerial::Win32::DCB::ONESTOPBIT
@@ -24,19 +24,19 @@ class Serial
       err = RubySerial::Win32.SetCommState @fd, dcb
       if err == 0
         raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
-      end 
+      end
     end
 
     RubySerial::Win32::CommTimeouts.new.tap do |timeouts|
-      timeouts[:read_interval_timeout]          = 50
-      timeouts[:read_total_timeout_multiplier]  = 50
+      timeouts[:read_interval_timeout]          = 10
+      timeouts[:read_total_timeout_multiplier]  = 1
       timeouts[:read_total_timeout_constant]    = 10
-      timeouts[:write_total_timeout_multiplier] = 50
+      timeouts[:write_total_timeout_multiplier] = 1
       timeouts[:write_total_timeout_constant]   = 10
       err = RubySerial::Win32.SetCommTimeouts @fd, timeouts
       if err == 0
         raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
-      end 
+      end
     end
   end
 
@@ -71,7 +71,7 @@ class Serial
     err = RubySerial::Win32.WriteFile(@fd, buff, buff.size, count, nil)
     if err == 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
-    end 
+    end
   end
 
   def close
@@ -80,7 +80,7 @@ class Serial
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
     else
       @open = false
-    end 
+    end
   end
 
   def closed?
