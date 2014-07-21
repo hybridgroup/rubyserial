@@ -68,10 +68,11 @@ class Serial
   def write(data)
     buff = FFI::MemoryPointer.from_string(data.to_s)
     count = FFI::MemoryPointer.new :uint32, 1
-    err = RubySerial::Win32.WriteFile(@fd, buff, buff.size, count, nil)
+    err = RubySerial::Win32.WriteFile(@fd, buff, buff.size-1, count, nil)
     if err == 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
+    count.read_string.unpack('H4').join().to_i(16)
   end
 
   def close
