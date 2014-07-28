@@ -1,0 +1,25 @@
+platform:
+  - x64
+
+install:
+  - SET PATH=C:\Ruby%ruby_version%\bin;%PATH%
+  - ruby -v
+  - gem install bundler
+  - bundle install
+  - ps: Start-FileDownload https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/com0com.cer
+  - ps: C:\"Program Files"\"Microsoft SDKs"\Windows\v7.1\Bin\CertMgr.exe /add com0com.cer /s /r localMachine root
+  - ps: C:\"Program Files"\"Microsoft SDKs"\Windows\v7.1\Bin\CertMgr.exe /add com0com.cer /s /r localMachine trustedpublisher
+  - ps: Start-FileDownload https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
+  - ps: $env:CNC_INSTALL_CNCA0_CNCB0_PORTS="YES"
+  - ps: .\setup_com0com_W7_x64_signed.exe /S
+  - ps: sleep 60
+
+test_script:
+  - ps: rspec spec -fd
+
+environment:
+  matrix:
+    - ruby_version: "200-x64"
+    - ruby_version: "21-x64"
+
+build: off

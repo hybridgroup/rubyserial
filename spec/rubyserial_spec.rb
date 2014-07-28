@@ -5,26 +5,10 @@ describe "rubyserial" do
     @ports = []
     require 'rbconfig'
     if RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
-      @command_output = `powershell "Get-WmiObject Win32_SerialPort | Select-Object DeviceID, Description"`
-      @prefix = "\\\\.\\"
-      @coms = @command_output.scan(/COM\d*/).uniq
-      @file_array = @command_output.split("\n")
-      @file_array.each do |line|
-        if line.include?('com0com')
-          @coms.each do |e|
-            if line =~ /#{e}/
-              @ports << "#{@prefix}#{e}"
-            end
-          end
-        end
-      end
-
-      if @ports[0].nil?
-        puts "Heya mister (or miss(es)). For this to work you need com0com "\
-        "installed. It doesn't look like you have it so rerun this after you"\
-        "install it from here: https://code.google.com/p/powersdr-iq/download"\
-        "s/detail?name=setup_com0com_W7_x64_signed.exe&can=2&q="
-      end
+      # NOTE: Tests on windows require com0com 
+      # https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
+      @ports[0] = "\\\\.\\CNCA0"
+      @ports[1] = "\\\\.\\CNCB0"
     else
       File.delete('socat.log') if File.file?('socat.log')
 
