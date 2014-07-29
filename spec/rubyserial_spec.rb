@@ -1,6 +1,6 @@
 require 'rubyserial'
 
-describe "basic reading and writing" do
+describe "rubyserial" do
   before do
     @ports = []
     require 'rbconfig'
@@ -90,5 +90,31 @@ describe "basic reading and writing" do
     sleep 0.1
     check = @sp.getbyte
     expect([check].pack('C')).to eql('h')
+  end
+
+
+  describe "giving me lines" do
+    it "should give me a line" do
+      @sp.write("no yes \n hello")
+      expect(@sp2.gets).to eql("no yes \n")
+    end
+
+    it "should accept a sep param" do
+      @sp.write('no yes END bleh')
+      expect(@sp2.gets('END')).to eql("no yes END")
+    end
+
+    it "should accept a limit param" do
+      @sp.write("no yes \n hello")
+      expect(@sp2.gets(4)).to eql("no y")
+    end
+
+    it "should accept limit and sep params" do
+      @sp.write("no yes END hello")
+      expect(@sp2.gets('END', 20)).to eql("no yes END")
+      @sp2.read(1000)
+      @sp.write("no yes END hello")
+      expect(@sp2.gets('END', 4)).to eql('no y')
+    end
   end
 end
