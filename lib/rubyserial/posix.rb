@@ -89,7 +89,7 @@ class Serial
     loop do
       current_byte = getbyte
       bytes << current_byte unless current_byte.nil?
-      break if (bytes.last(sep.bytes.length) == sep.bytes) || ((bytes.size == limit) if limit)
+      break if (bytes.last(sep.bytes.size) == sep.bytes) || ((bytes.size == limit) if limit)
     end
 
     bytes.map { |e| e.chr }.join
