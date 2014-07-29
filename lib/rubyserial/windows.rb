@@ -76,6 +76,7 @@ class Serial
   end
 
   def gets(sep=$/, limit=nil)
+    sep = "\n\n" if sep == ''
     # This allows the method signature to be (sep) or (limit)
     (limit = sep; sep="\n") if sep.is_a? Integer
     bytes = []

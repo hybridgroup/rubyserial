@@ -116,5 +116,10 @@ describe "rubyserial" do
       @sp.write("no yes END hello")
       expect(@sp2.gets('END', 4)).to eql('no y')
     end
+
+    it "should read a paragraph at a time" do
+      @sp.write("Something \n Something else \n\n and other stuff")
+      expect(@sp2.gets('')).to eql("Something \n Something else \n\n")
+    end
   end
 end
