@@ -11,4 +11,4 @@ install:
   - sudo apt-get update && sudo apt-get install --force-yes socat
 script:
   - bundle install
-  - bundle exec rspec
+  - bundle exec rspec -fd
