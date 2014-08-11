@@ -82,6 +82,20 @@ class Serial
     end
   end
 
+  def gets(sep=$/, limit=nil)
+    sep = "\n\n" if sep == ''
+    # This allows the method signature to be (sep) or (limit)
+    (limit = sep; sep="\n") if sep.is_a? Integer
+    bytes = []
+    loop do
+      current_byte = getbyte
+      bytes << current_byte unless current_byte.nil?
+      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes.to_a) || ((bytes.size == limit) if limit)
+    end
+
+    bytes.map { |e| e.chr }.join
+  end
+
   private
 
   def build_config(baude_rate, data_bits)
