@@ -80,18 +80,23 @@ describe "rubyserial" do
     expect(@sp.read(5)).to eql('')
   end
 
-  it "should give me nil on getbyte" do
-    expect(@sp.getbyte).to be_nil
+  it "should give me nil on getc" do
+    expect(@sp.getc).to be_nil
   end
 
   it "should give me bytes" do
     @sp2.write('hello')
     # small delay so it can write to the other port.
     sleep 0.1
-    check = @sp.getbyte
+    check = @sp.getc
     expect([check].pack('C')).to eql('h')
   end
 
+  describe "getc and getbyte are aliases" do
+    it "they should be the same" do
+      expect(Serial.instance_method(:getc)).to eql(Serial.instance_method(:getbyte))
+    end
+  end
 
   describe "giving me lines" do
     it "should give me a line" do

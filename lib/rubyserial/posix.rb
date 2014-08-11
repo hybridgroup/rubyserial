@@ -82,6 +82,8 @@ class Serial
     end
   end
 
+  alias_method :getc, :getbyte
+
   def gets(sep=$/, limit=nil)
     sep = "\n\n" if sep == ''
     # This allows the method signature to be (sep) or (limit)
