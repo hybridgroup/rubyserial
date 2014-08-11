@@ -50,6 +50,8 @@ class Serial
     buff.get_bytes(0, count.read_string.unpack('H4').join().to_i(16))
   end
 
+  alias_method :sysread, :read
+
   def getbyte
     buff = FFI::MemoryPointer.new :char, 1
     count = FFI::MemoryPointer.new :uint32, 1
@@ -64,6 +66,8 @@ class Serial
       buff.read_string.unpack('C').first
     end
   end
+
+  alias_method :getc, :getbyte
 
   def write(data)
     buff = FFI::MemoryPointer.from_string(data.to_s)
