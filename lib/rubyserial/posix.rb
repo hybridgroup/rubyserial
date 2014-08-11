@@ -68,6 +68,8 @@ class Serial
     buff.get_bytes(0, i)
   end
 
+  alias_method :sysread, :read
+
   def getbyte
     buff = FFI::MemoryPointer.new :char, 1
     i = RubySerial::Posix.read(@fd, buff, 1)

@@ -2,6 +2,7 @@ require 'rubyserial'
 
 describe "rubyserial" do
   before do
+    @killcommand = ''
     @ports = []
     require 'rbconfig'
     if RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
@@ -40,7 +41,8 @@ describe "rubyserial" do
           @fileread = @file.read
 
           unless @fileread.count("\n") < 3
-            @ptys = @fileread.scan(/PTY is (.*)/)
+            @ptys        = @fileread.scan(/PTY is (.*)/)
+            @killcommand = "kill -9 #{@fileread.scan(/\[(\d*)\]/)[0][0]}"
             break
           end
         end
@@ -56,6 +58,7 @@ describe "rubyserial" do
   after do
    @sp2.close
    @sp.close
+   system(@killcommand)
   end
 
   it "should read and write" do
@@ -92,9 +95,17 @@ describe "rubyserial" do
     expect([check].pack('C')).to eql('h')
   end
 
-  describe "getc and getbyte are aliases" do
-    it "they should be the same" do
-      expect(Serial.instance_method(:getc)).to eql(Serial.instance_method(:getbyte))
+  describe "aliases should be aliases" do
+    describe "getc and getbyte are aliases" do
+      it "should be the same" do
+        expect(Serial.instance_method(:getc)).to eql(Serial.instance_method(:getbyte))
+      end
+    end
+
+    describe "sysread should be aliased to read" do
+      it "should be the same" do
+        expect(Serial.instance_method(:sysread)).to eql(Serial.instance_method(:read))
+      end
     end
   end
 
