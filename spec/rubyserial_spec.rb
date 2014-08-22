@@ -109,6 +109,13 @@ describe "rubyserial" do
     end
   end
 
+  describe "read_timeout methods" do
+    it "should have read_timeout methods" do
+      expect(@sp).to respond_to :read_timeout
+      expect(@sp).to respond_to :read_timeout=
+    end
+  end
+
   describe "giving me lines" do
     it "should give me a line" do
       @sp.write("no yes \n hello")
