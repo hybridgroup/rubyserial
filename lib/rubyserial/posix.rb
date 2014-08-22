@@ -1,7 +1,7 @@
 require 'ffi'
 
 class Serial
-  def initialize(address, baude_rate=9600, data_bits=8)
+  def initialize(address, baude_rate=9600, data_bits=8, stop_bits=1)
     file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY
     @fd = RubySerial::Posix.open(address, file_opts)
 
@@ -21,7 +21,7 @@ class Serial
       raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
     end
 
-    @config = build_config(baude_rate, data_bits)
+    @config = build_config(baude_rate, data_bits, stop_bits)
 
     err = RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
     if err == -1
@@ -31,6 +31,16 @@ class Serial
 
   def closed?
     !@open
+  end
+
+  # @deprecated This is a stub method for compatability.
+  def read_timeout
+    warn "[DEPRECATION] `read_timeout` is deprecated. It is a stub method for compatability."
+  end
+
+  # @deprecated This is a stub method for compatability.
+  def read_timeout=(timeout)
+    warn "[DEPRECATION] `read_timeout=` is deprecated. It is a stub method for compatability."
   end
 
   def close
@@ -102,7 +112,7 @@ class Serial
 
   private
 
-  def build_config(baude_rate, data_bits)
+  def build_config(baude_rate, data_bits, stop_bits)
     config = RubySerial::Posix::Termios.new
 
     config[:c_iflag]  = RubySerial::Posix::IGNPAR
@@ -112,6 +122,10 @@ class Serial
       RubySerial::Posix::CREAD |
       RubySerial::Posix::CLOCAL |
       RubySerial::Posix::BAUDE_RATES[baude_rate]
+
+    if stop_bits == 2
+      config[:c_cflag] |= RubySerial::Posix::CSTOPB
+    end
 
     config[:cc_c][RubySerial::Posix::VMIN] = 0
 

@@ -1,7 +1,7 @@
 require 'ffi'
 
 class Serial
-  def initialize(address, baude_rate=9600, data_bits=8)
+  def initialize(address, baude_rate=9600, data_bits=8, stop_bits=1)
     file_opts = RubySerial::Win32::GENERIC_READ | RubySerial::Win32::GENERIC_WRITE
     @fd = RubySerial::Win32.CreateFileA(address, file_opts, 0, nil, RubySerial::Win32::OPEN_EXISTING, 0, nil)
     err = FFI.errno
@@ -19,7 +19,13 @@ class Serial
       end
       dcb[:baudrate] = baude_rate
       dcb[:bytesize] = data_bits
-      dcb[:stopbits] = RubySerial::Win32::DCB::ONESTOPBIT
+
+      if stop_bits == 2
+        dcb[:stopbits] = RubySerial::Win32::DCB::TWOSTOPBITS
+      else
+        dcb[:stopbits] = RubySerial::Win32::DCB::ONESTOPBIT
+      end
+
       dcb[:parity]   = RubySerial::Win32::DCB::NOPARITY
       err = RubySerial::Win32.SetCommState @fd, dcb
       if err == 0
@@ -100,6 +106,16 @@ class Serial
     else
       @open = false
     end
+  end
+
+  # @deprecated This is a stub method for compatability.
+  def read_timeout
+    warn "[DEPRECATION] `read_timeout` is deprecated. It is a stub method for compatability."
+  end
+
+  # @deprecated This is a stub method for compatability.
+  def read_timeout=(timeout)
+    warn "[DEPRECATION] `read_timeout=` is deprecated. It is a stub method for compatability."
   end
 
   def closed?
