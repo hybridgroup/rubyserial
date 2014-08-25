@@ -95,20 +95,6 @@ describe "rubyserial" do
     expect([check].pack('C')).to eql('h')
   end
 
-  describe "aliases should be aliases" do
-    describe "getc and getbyte are aliases" do
-      it "should be the same" do
-        expect(Serial.instance_method(:getc)).to eql(Serial.instance_method(:getbyte))
-      end
-    end
-
-    describe "sysread should be aliased to read" do
-      it "should be the same" do
-        expect(Serial.instance_method(:sysread)).to eql(Serial.instance_method(:read))
-      end
-    end
-  end
-
   describe "read_timeout methods" do
     it "should have read_timeout methods" do
       expect(@sp).to respond_to :read_timeout

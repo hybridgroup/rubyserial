@@ -19,6 +19,8 @@ module RubySerial
     VMIN       = 6
     NCCS       = 19
     CSTOPB     = 0x00000400
+    PARENB     = 0x00001000
+    PARODD     = 0x00002000
 
     DATA_BITS = {
       5 => 0000000,

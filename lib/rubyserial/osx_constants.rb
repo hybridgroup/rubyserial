@@ -18,6 +18,8 @@ module RubySerial
     TCSANOW    = 0
     NCCS       = 20
     CSTOPB     = 0x00000400
+    PARENB     = 0x00001000
+    PARODD     = 0x00002000
 
     DATA_BITS = {
       5 => 0x00000000,
