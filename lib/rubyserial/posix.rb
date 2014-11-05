@@ -43,16 +43,20 @@ class Serial
   end
 
   def write(data)
+    data = data.to_s
     n =  0
     while data.size > n do
       buff = FFI::MemoryPointer.from_string(data[n..-1].to_s)
-      i = RubySerial::Posix.write(@fd, buff, buff.size)
+      i = RubySerial::Posix.write(@fd, buff, buff.size-1)
       if i == -1
         raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
       else
         n = n+i
       end
     end
+
+    # return number of bytes written
+    n
   end
 
   def read(size)
@@ -76,6 +80,20 @@ class Serial
     else
       buff.read_string.unpack('C').first
     end
+  end
+
+  def gets(sep=$/, limit=nil)
+    sep = "\n\n" if sep == ''
+    # This allows the method signature to be (sep) or (limit)
+    (limit = sep; sep="\n") if sep.is_a? Integer
+    bytes = []
+    loop do
+      current_byte = getbyte
+      bytes << current_byte unless current_byte.nil?
+      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes.to_a) || ((bytes.size == limit) if limit)
+    end
+
+    bytes.map { |e| e.chr }.join
   end
 
   private

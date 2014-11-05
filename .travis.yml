@@ -7,8 +7,12 @@ rvm:
   - jruby
   - jruby-head
   - rbx-2.2.10
+matrix:
+  allow_failures:
+    - rvm: jruby-head
+    - rvm: ruby-head
 install:
   - sudo apt-get update && sudo apt-get install --force-yes socat
 script:
   - bundle install
-  - bundle exec rspec
+  - bundle exec rspec -fd

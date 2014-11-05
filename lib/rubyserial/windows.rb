@@ -68,10 +68,25 @@ class Serial
   def write(data)
     buff = FFI::MemoryPointer.from_string(data.to_s)
     count = FFI::MemoryPointer.new :uint32, 1
-    err = RubySerial::Win32.WriteFile(@fd, buff, buff.size, count, nil)
+    err = RubySerial::Win32.WriteFile(@fd, buff, buff.size-1, count, nil)
     if err == 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
+    count.read_string.unpack('H4').join().to_i(16)
+  end
+
+  def gets(sep=$/, limit=nil)
+    sep = "\n\n" if sep == ''
+    # This allows the method signature to be (sep) or (limit)
+    (limit = sep; sep="\n") if sep.is_a? Integer
+    bytes = []
+    loop do
+      current_byte = getbyte
+      bytes << current_byte unless current_byte.nil?
+      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes) || ((bytes.size == limit) if limit)
+    end
+
+    bytes.map { |e| e.chr }.join
   end
 
   def close
