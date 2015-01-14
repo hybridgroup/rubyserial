@@ -47,7 +47,7 @@ class Serial
     if err == 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
-    buff.get_bytes(0, count.read_string.unpack('H4').join().to_i(16))
+    buff.get_bytes(0, count.read_int)
   end
 
   def getbyte
@@ -58,7 +58,7 @@ class Serial
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
 
-    if count.read_string.unpack('H4').join().to_i(16) == 0
+    if count.read_int == 0
       nil
     else
       buff.read_string.unpack('C').first
@@ -72,7 +72,7 @@ class Serial
     if err == 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
-    count.read_string.unpack('H4').join().to_i(16)
+    count.read_int
   end
 
   def gets(sep=$/, limit=nil)
