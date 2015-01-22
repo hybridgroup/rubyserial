@@ -7,6 +7,7 @@ Unlike other Ruby serial port implementations, it supports all of the most popul
 The interface to RubySerial should be (mostly) compatible with other Ruby serialport gems, so you should be able to drop in the new gem, change the `require` and use it as a replacement. If not, please let us know so we can address any issues.
 
 [![Build Status](https://travis-ci.org/hybridgroup/rubyserial.svg)](https://travis-ci.org/hybridgroup/rubyserial)
+[![Build status](https://ci.appveyor.com/api/projects/status/946nlaqy4443vb99/branch/master?svg=true)](https://ci.appveyor.com/project/zankich/rubyserial/branch/master)
 
 ## Installation
 
