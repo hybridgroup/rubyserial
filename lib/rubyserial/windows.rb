@@ -3,7 +3,7 @@ require 'ffi'
 class Serial
   def initialize(address, baude_rate=9600, data_bits=8)
     file_opts = RubySerial::Win32::GENERIC_READ | RubySerial::Win32::GENERIC_WRITE
-    @fd = RubySerial::Win32.CreateFileA(address, file_opts, 0, nil, RubySerial::Win32::OPEN_EXISTING, 0, nil)
+    @fd = RubySerial::Win32.CreateFileA("\\\\.\\#{address}", file_opts, 0, nil, RubySerial::Win32::OPEN_EXISTING, 0, nil)
     err = FFI.errno
     if err != 0
       raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[err]
@@ -83,7 +83,7 @@ class Serial
     loop do
       current_byte = getbyte
       bytes << current_byte unless current_byte.nil?
-      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes) || ((bytes.size == limit) if limit)
+      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes.to_a) || ((bytes.size == limit) if limit)
     end
 
     bytes.map { |e| e.chr }.join
