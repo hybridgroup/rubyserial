@@ -12,6 +12,8 @@ describe "rubyserial" do
     else
       File.delete('socat.log') if File.file?('socat.log')
 
+      raise 'socat not found' unless (`socat -h` && $? == 0)
+
       Thread.new do
         system('socat -lf socat.log -d -d pty,raw,echo=0 pty,raw,echo=0')
       end
@@ -66,6 +68,12 @@ describe "rubyserial" do
 
   it "should give me nil on getbyte" do
     expect(@sp.getbyte).to be_nil
+  end
+
+  it 'should give me a zero byte from getbyte' do
+    @sp2.write("\x00")
+    sleep 0.1
+    expect(@sp.getbyte).to eql(0)
   end
 
   it "should give me bytes" do
