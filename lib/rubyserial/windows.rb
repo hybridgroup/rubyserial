@@ -61,7 +61,7 @@ class Serial
     if count.read_int == 0
       nil
     else
-      buff.read_string.unpack('C').first
+      buff.get_bytes(0, 1).bytes.first
     end
   end
 
