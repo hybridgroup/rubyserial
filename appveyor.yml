@@ -15,12 +15,12 @@ install:
   - ps: sleep 60
 
 test_script:
-  - ps: rspec spec -fd
+  - SET CODECLIMATE_REPO_TOKEN=70754a8aa666790236dbbb910727648f4dbb1f73a28f886d0b0c9e39a36b5a79
+  - bundle exec rspec -fd
 
 environment:
   matrix:
     - ruby_version: "200-x64"
     - ruby_version: "21-x64"
-    - ruby_version: "22-x64"
 
 build: off
