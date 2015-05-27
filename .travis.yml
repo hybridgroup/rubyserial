@@ -16,4 +16,4 @@ install:
   - sudo apt-get update && sudo apt-get install --force-yes socat
 script:
   - bundle install
-  - bundle exec rspec -fd
+  - CODECLIMATE_REPO_TOKEN=70754a8aa666790236dbbb910727648f4dbb1f73a28f886d0b0c9e39a36b5a79 bundle exec rspec -fd
