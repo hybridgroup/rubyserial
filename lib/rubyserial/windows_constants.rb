@@ -1,5 +1,3 @@
-require 'ffi'
-
 module RubySerial
   module Win32
     extend FFI::Library

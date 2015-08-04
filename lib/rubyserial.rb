@@ -1,4 +1,3 @@
-$:.unshift(File.dirname(__FILE__))
 require 'rbconfig'
 require 'ffi'
 include RbConfig

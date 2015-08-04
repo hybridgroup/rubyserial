@@ -1,5 +1,3 @@
-require 'ffi'
-
 module RubySerial
   module Posix
   extend FFI::Library
