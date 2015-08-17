@@ -1,30 +1,14 @@
 class Serial
-  def initialize(address, baude_rate=9600, data_bits=8)
+  def initialize(address, baude_rate = 9600, data_bits = 8)
     file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY | RubySerial::Posix::O_NONBLOCK
-    @fd = RubySerial::Posix.open(address, file_opts)
+    @fd = cmd { RubySerial::Posix.open(address, file_opts) }
+    @open = true
 
-    if @fd == -1
-      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    else
-      @open = true
-    end
-
-    fl = RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_GETFL, :int, 0)
-    if fl == -1
-      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
-
-    err = RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_SETFL, :int, ~RubySerial::Posix::O_NONBLOCK & fl)
-    if err == -1
-      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
+    fl = cmd { RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_GETFL, :int, 0) }
+    cmd { RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_SETFL, :int, ~RubySerial::Posix::O_NONBLOCK & fl) }
 
     @config = build_config(baude_rate, data_bits)
-
-    err = RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
-    if err == -1
-      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
+    cmd { RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config) }
   end
 
   def closed?
@@ -32,12 +16,8 @@ class Serial
   end
 
   def close
-    err = RubySerial::Posix.close(@fd)
-    if err == -1
-      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    else
-      @open = false
-    end
+    cmd { RubySerial::Posix.close(@fd) }
+    @open = false
   end
 
   def write(data)
@@ -45,39 +25,23 @@ class Serial
     n =  0
     while data.size > n do
       buff = FFI::MemoryPointer.from_string(data[n..-1].to_s)
-      i = RubySerial::Posix.write(@fd, buff, buff.size-1)
-      if i == -1
-        raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
-      else
-        n = n+i
-      end
+      i = cmd { RubySerial::Posix.write(@fd, buff, buff.size-1) }
+      n = n + i
     end
 
-    # return number of bytes written
-    n
+    n # return number of bytes written
   end
 
   def read(size)
     buff = FFI::MemoryPointer.new :char, size
-    i = RubySerial::Posix.read(@fd, buff, size)
-    if i == -1
-      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
+    i = cmd { RubySerial::Posix.read(@fd, buff, size) }
     buff.get_bytes(0, i)
   end
 
   def getbyte
     buff = FFI::MemoryPointer.new :char, 1
-    i = RubySerial::Posix.read(@fd, buff, 1)
-    if i == -1
-      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
-
-    if i == 0
-      nil
-    else
-      buff.get_bytes(0,1).bytes.first
-    end
+    i = cmd { RubySerial::Posix.read(@fd, buff, 1) }
+    i.zero? ? nil : buff.get_bytes(0, 1).bytes.first
   end
 
   def gets(sep=$/, limit=nil)
@@ -95,6 +59,14 @@ class Serial
   end
 
   private
+
+  def cmd(&block)
+    result = block.call
+    if result == -1
+      raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
+    end
+    result
+  end
 
   def build_config(baude_rate, data_bits)
     config = RubySerial::Posix::Termios.new
