@@ -34,7 +34,7 @@ class Serial
 
   def read(size)
     buff = FFI::MemoryPointer.new :char, size
-    i = cmd {RubySerial::Posix.read(@fd, buff, size) }
+    i = cmd { RubySerial::Posix.read(@fd, buff, size) }
     buff.get_bytes(0, i)
   end
 
