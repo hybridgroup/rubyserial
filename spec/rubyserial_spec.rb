@@ -5,7 +5,7 @@ describe "rubyserial" do
     @ports = []
     require 'rbconfig'
     if RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
-      # NOTE: Tests on windows require com0com 
+      # NOTE: Tests on windows require com0com
       # https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
       @ports[0] = "\\\\.\\CNCA0"
       @ports[1] = "\\\\.\\CNCB0"
@@ -84,12 +84,22 @@ describe "rubyserial" do
     expect([check].pack('C')).to eql('h')
   end
 
-
   describe "giving me lines" do
     it "should give me a line" do
       @sp.write("no yes \n hello")
       sleep 0.1
       expect(@sp2.gets).to eql("no yes \n")
+    end
+
+    it "should give me a line with block" do
+      @sp.write("no yes \n hello")
+      sleep 0.1
+      result = ""
+      @sp2.gets do |line|
+        result = line
+        break if !result.empty?
+      end
+      expect(result).to eql("no yes \n")
     end
 
     it "should accept a sep param" do

@@ -74,17 +74,13 @@ class Serial
   end
 
   def gets(sep=$/, limit=nil)
-    sep = "\n\n" if sep == ''
-    # This allows the method signature to be (sep) or (limit)
-    (limit = sep; sep="\n") if sep.is_a? Integer
-    bytes = []
-    loop do
-      current_byte = getbyte
-      bytes << current_byte unless current_byte.nil?
-      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes.to_a) || ((bytes.size == limit) if limit)
+    if block_given?
+      loop do
+        yield(get_until_sep(sep, limit))
+      end
+    else
+      get_until_sep(sep, limit)
     end
-
-    bytes.map { |e| e.chr }.join
   end
 
   def close
@@ -98,5 +94,21 @@ class Serial
 
   def closed?
     !@open
+  end
+
+  private
+
+  def get_until_sep(sep, limit)
+    sep = "\n\n" if sep == ''
+    # This allows the method signature to be (sep) or (limit)
+    (limit = sep; sep="\n") if sep.is_a? Integer
+    bytes = []
+    loop do
+      current_byte = getbyte
+      bytes << current_byte unless current_byte.nil?
+      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes.to_a) || ((bytes.size == limit) if limit)
+    end
+
+    bytes.map { |e| e.chr }.join
   end
 end
