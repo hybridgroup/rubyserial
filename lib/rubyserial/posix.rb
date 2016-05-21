@@ -81,6 +81,18 @@ class Serial
   end
 
   def gets(sep=$/, limit=nil)
+    if block_given?
+      loop do
+        yield(get_until_sep(sep, limit))
+      end
+    else
+      get_until_sep(sep, limit)
+    end
+  end
+
+  private
+
+  def get_until_sep(sep, limit)
     sep = "\n\n" if sep == ''
     # This allows the method signature to be (sep) or (limit)
     (limit = sep; sep="\n") if sep.is_a? Integer
@@ -93,8 +105,6 @@ class Serial
 
     bytes.map { |e| e.chr }.join
   end
-
-  private
 
   def build_config(baude_rate, data_bits)
     config = RubySerial::Posix::Termios.new
