@@ -1,3 +1,5 @@
+# Copyright (c) 2014-2016 The Hybrid Group
+
 class Serial
   def initialize(address, baude_rate=9600, data_bits=8)
     file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY | RubySerial::Posix::O_NONBLOCK

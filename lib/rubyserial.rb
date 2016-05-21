@@ -1,3 +1,5 @@
+# Copyright (c) 2014-2016 The Hybrid Group
+
 require 'rbconfig'
 require 'ffi'
 include RbConfig

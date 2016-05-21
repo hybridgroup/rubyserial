@@ -1,6 +1,6 @@
 # rubyserial
 
-RubySerial is a simple Ruby gem for reading from and writing to serial ports. 
+RubySerial is a simple Ruby gem for reading from and writing to serial ports.
 
 Unlike other Ruby serial port implementations, it supports all of the most popular Ruby implementations (MRI, JRuby, & Rubinius) on the most popular operating systems (OSX, Linux, & Windows). And it does not require any native compilation thanks to using RubyFFI [https://github.com/ffi/ffi](https://github.com/ffi/ffi).
 
@@ -36,12 +36,36 @@ available. Emits a `RubySerial::Exception` on error.
 
 **getbyte -> Fixnum or nil**
 
-Returns an 8 bit byte or nil if no data is available. 
+Returns an 8 bit byte or nil if no data is available.
 Emits a `RubySerial::Exception` on error.
 
 **RubySerial::Exception**
 
 A wrapper exception type, that returns the underlying system error code.
+
+## Running the tests
+
+The test suite is written using rspec, just use the `rspec` command.
+
+However, to run the tests, you must also have the `socat` utility program installed.
+
+### Installing socat on OS X
+
+```
+brew install socat
+```
+
+### Installing socat on Linux
+
+```
+sudo apt-get install socat
+```
+
+### Installing socat on Windows
+
+You might need to build from source... the latest build of socat for Windows is quite old. Get source from here:
+
+http://www.dest-unreach.org/socat/download/
 
 ## License
 
