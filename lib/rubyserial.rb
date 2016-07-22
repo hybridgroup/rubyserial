@@ -2,18 +2,19 @@
 
 require 'rbconfig'
 require 'ffi'
-include RbConfig
 
 module RubySerial
+  ON_WINDOWS = RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
+  ON_LINUX = RbConfig::CONFIG['host_os'] =~ /linux/i
   class Exception < Exception
   end
 end
 
-if CONFIG['host_os'] =~ /mswin|windows|mingw/i
+if RubySerial::ON_WINDOWS
   require 'rubyserial/windows_constants'
   require 'rubyserial/windows'
 else
-  if CONFIG['host_os'] =~ /linux/i
+  if RubySerial::ON_LINUX
     require 'rubyserial/linux_constants'
   else
     require 'rubyserial/osx_constants'

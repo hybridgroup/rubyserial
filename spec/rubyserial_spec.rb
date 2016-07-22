@@ -3,8 +3,7 @@ require 'rubyserial'
 describe "rubyserial" do
   before do
     @ports = []
-    require 'rbconfig'
-    if RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
+    if RubySerial::ON_WINDOWS
       # NOTE: Tests on windows require com0com
       # https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
       @ports[0] = "\\\\.\\CNCA0"
@@ -128,6 +127,26 @@ describe "rubyserial" do
       @sp.write("Something \n Something else \n\n and other stuff")
       sleep 0.1
       expect(@sp2.gets('')).to eql("Something \n Something else \n\n")
+    end
+  end
+
+  describe 'config' do
+    it 'should accept EVEN parity' do
+      @sp2.close
+      @sp.close
+      @sp2 = Serial.new(@ports[0], 19200, 8, :even)
+      @sp = Serial.new(@ports[1], 19200, 8, :even)
+      @sp.write("Hello!\n")
+      expect(@sp2.gets).to eql("Hello!\n")
+    end
+
+    it 'should accept ODD parity' do
+      @sp2.close
+      @sp.close
+      @sp2 = Serial.new(@ports[0], 19200, 8, :odd)
+      @sp = Serial.new(@ports[1], 19200, 8, :odd)
+      @sp.write("Hello!\n")
+      expect(@sp2.gets).to eql("Hello!\n")
     end
   end
 end

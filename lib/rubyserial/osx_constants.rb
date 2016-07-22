@@ -11,6 +11,8 @@ module RubySerial
     F_GETFL = 3
     F_SETFL = 4
     IGNPAR = 0x00000004
+    PARENB = 0x00001000
+    PARODD = 0x00002000
     VMIN = 16
     VTIME = 17
     CLOCAL = 0x00008000
@@ -49,6 +51,12 @@ module RubySerial
       76800 => 76800,
       115200 => 115200,
       230400 => 230400
+    }
+
+    PARITY = {
+      :none => 0x00000000,
+      :even => PARENB,
+      :odd => PARENB | PARODD,
     }
 
     ERROR_CODES = {

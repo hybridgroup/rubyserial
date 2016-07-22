@@ -18,7 +18,9 @@ The interface to RubySerial should be (mostly) compatible with other Ruby serial
 
 ```ruby
 require 'rubyserial'
+serialport = Serial.new '/dev/ttyACM0' # Defaults to 9600 baud, 8 data bits, and no parity
 serialport = Serial.new '/dev/ttyACM0', 57600
+serialport = Serial.new '/dev/ttyACM0', 19200, 8, :even
 ```
 
 ## Methods

@@ -1,7 +1,7 @@
 # Copyright (c) 2014-2016 The Hybrid Group
 
 class Serial
-  def initialize(address, baude_rate=9600, data_bits=8)
+  def initialize(address, baude_rate=9600, data_bits=8, parity=:none)
     file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY | RubySerial::Posix::O_NONBLOCK
     @fd = RubySerial::Posix.open(address, file_opts)
 
@@ -21,7 +21,7 @@ class Serial
       raise RubySerial::Exception, RubySerial::Posix::ERROR_CODES[FFI.errno]
     end
 
-    @config = build_config(baude_rate, data_bits)
+    @config = build_config(baude_rate, data_bits, parity)
 
     err = RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
     if err == -1
@@ -108,7 +108,7 @@ class Serial
     bytes.map { |e| e.chr }.join
   end
 
-  def build_config(baude_rate, data_bits)
+  def build_config(baude_rate, data_bits, parity)
     config = RubySerial::Posix::Termios.new
 
     config[:c_iflag]  = RubySerial::Posix::IGNPAR
@@ -117,7 +117,8 @@ class Serial
     config[:c_cflag]  = RubySerial::Posix::DATA_BITS[data_bits] |
       RubySerial::Posix::CREAD |
       RubySerial::Posix::CLOCAL |
-      RubySerial::Posix::BAUDE_RATES[baude_rate]
+      RubySerial::Posix::BAUDE_RATES[baude_rate] |
+      RubySerial::Posix::PARITY[parity]
 
     config[:cc_c][RubySerial::Posix::VMIN] = 0
 

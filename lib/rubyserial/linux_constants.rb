@@ -14,6 +14,8 @@ module RubySerial
     TCSANOW = 0
     TCSETS = 0x5402
     IGNPAR = 0000004
+    PARENB = 0000400
+    PARODD = 0001000
     CREAD = 0000200
     CLOCAL = 0004000
     VMIN = 6
@@ -58,6 +60,12 @@ module RubySerial
       3000000 => 0010015,
       3500000 => 0010016,
       4000000 => 0010017
+    }
+
+    PARITY = {
+      :none => 0000000,
+      :even => PARENB,
+      :odd => PARENB | PARODD,
     }
 
     ERROR_CODES = {
