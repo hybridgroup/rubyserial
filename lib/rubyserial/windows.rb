@@ -1,7 +1,10 @@
 # Copyright (c) 2014-2016 The Hybrid Group
 
 class Serial
-  def initialize(address, baude_rate=9600, data_bits=8)
+  def initialize(address, baude_rate=9600, data_bits=8, parity=:none)
+    if parity != :none
+      warn "warning: parity #{parity} is not supported on Windows.  Ignoring."
+    end
     file_opts = RubySerial::Win32::GENERIC_READ | RubySerial::Win32::GENERIC_WRITE
     @fd = RubySerial::Win32.CreateFileA("\\\\.\\#{address}", file_opts, 0, nil, RubySerial::Win32::OPEN_EXISTING, 0, nil)
     err = FFI.errno
