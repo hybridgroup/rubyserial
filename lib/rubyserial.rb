@@ -6,7 +6,7 @@ require 'ffi'
 module RubySerial
   ON_WINDOWS = RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
   ON_LINUX = RbConfig::CONFIG['host_os'] =~ /linux/i
-  class Exception < Exception
+  class Error < IOError
   end
 end
 

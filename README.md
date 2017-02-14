@@ -28,22 +28,22 @@ serialport = Serial.new '/dev/ttyACM0', 19200, 8, :even
 **write(data : String) -> Int**
 
 Returns the number of bytes written.
-Emits a `RubySerial::Exception` on error.
+Emits a `RubySerial::Error` on error.
 
 **read(length : Int) -> String**
 
 Returns a string up to `length` long. It is not guaranteed to return the entire
 length specified, and will return an empty string if no data is
-available. Emits a `RubySerial::Exception` on error.
+available. Emits a `RubySerial::Error` on error.
 
 **getbyte -> Fixnum or nil**
 
 Returns an 8 bit byte or nil if no data is available.
-Emits a `RubySerial::Exception` on error.
+Emits a `RubySerial::Error` on error.
 
-**RubySerial::Exception**
+**RubySerial::Error**
 
-A wrapper exception type, that returns the underlying system error code.
+A wrapper error type that returns the underlying system error code and inherits from IOError.
 
 ## Running the tests
 

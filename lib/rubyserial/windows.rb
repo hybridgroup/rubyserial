@@ -9,7 +9,7 @@ class Serial
     @fd = RubySerial::Win32.CreateFileA("\\\\.\\#{address}", file_opts, 0, nil, RubySerial::Win32::OPEN_EXISTING, 0, nil)
     err = FFI.errno
     if err != 0
-      raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[err]
+      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[err]
     else
       @open = true
     end
@@ -18,7 +18,7 @@ class Serial
       dcb[:dcblength] = RubySerial::Win32::DCB::Sizeof
       err = RubySerial::Win32.GetCommState @fd, dcb
       if err == 0
-        raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
+        raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
       end
       dcb[:baudrate] = baude_rate
       dcb[:bytesize] = data_bits
@@ -26,7 +26,7 @@ class Serial
       dcb[:parity]   = RubySerial::Win32::DCB::NOPARITY
       err = RubySerial::Win32.SetCommState @fd, dcb
       if err == 0
-        raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
+        raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
       end
     end
 
@@ -38,7 +38,7 @@ class Serial
       timeouts[:write_total_timeout_constant]   = 10
       err = RubySerial::Win32.SetCommTimeouts @fd, timeouts
       if err == 0
-        raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
+        raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
       end
     end
   end
@@ -48,7 +48,7 @@ class Serial
     count = FFI::MemoryPointer.new :uint32, 1
     err = RubySerial::Win32.ReadFile(@fd, buff, size, count, nil)
     if err == 0
-      raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
+      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
     buff.get_bytes(0, count.read_int)
   end
@@ -58,7 +58,7 @@ class Serial
     count = FFI::MemoryPointer.new :uint32, 1
     err = RubySerial::Win32.ReadFile(@fd, buff, 1, count, nil)
     if err == 0
-      raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
+      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
 
     if count.read_int == 0
@@ -73,7 +73,7 @@ class Serial
     count = FFI::MemoryPointer.new :uint32, 1
     err = RubySerial::Win32.WriteFile(@fd, buff, buff.size-1, count, nil)
     if err == 0
-      raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
+      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
     end
     count.read_int
   end
@@ -91,7 +91,7 @@ class Serial
   def close
     err = RubySerial::Win32.CloseHandle(@fd)
     if err == 0
-      raise RubySerial::Exception, RubySerial::Win32::ERROR_CODES[FFI.errno]
+      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
     else
       @open = false
     end
