@@ -263,13 +263,13 @@ module RubySerial
               :write_total_timeout_constant,    :uint32
     end
 
-    attach_function :CreateFileA,     [:pointer, :uint32, :uint32, :pointer, :uint32, :uint32, :pointer], :pointer
-    attach_function :CloseHandle,     [:pointer], :int
-    attach_function :ReadFile,        [:pointer, :pointer, :uint32, :pointer, :pointer], :int32
-    attach_function :WriteFile,       [:pointer, :pointer, :uint32, :pointer, :pointer], :int32
-    attach_function :GetCommState,    [:pointer, RubySerial::Win32::DCB], :int32
-    attach_function :SetCommState,    [:pointer, RubySerial::Win32::DCB], :int32
-    attach_function :GetCommTimeouts, [:pointer, RubySerial::Win32::CommTimeouts], :int32
-    attach_function :SetCommTimeouts, [:pointer, RubySerial::Win32::CommTimeouts], :int32
+    attach_function :CreateFileA,     [:pointer, :uint32, :uint32, :pointer, :uint32, :uint32, :pointer], :pointer, blocking: true
+    attach_function :CloseHandle,     [:pointer], :int, blocking: true
+    attach_function :ReadFile,        [:pointer, :pointer, :uint32, :pointer, :pointer], :int32, blocking: true
+    attach_function :WriteFile,       [:pointer, :pointer, :uint32, :pointer, :pointer], :int32, blocking: true
+    attach_function :GetCommState,    [:pointer, RubySerial::Win32::DCB], :int32, blocking: true
+    attach_function :SetCommState,    [:pointer, RubySerial::Win32::DCB], :int32, blocking: true
+    attach_function :GetCommTimeouts, [:pointer, RubySerial::Win32::CommTimeouts], :int32, blocking: true
+    attach_function :SetCommTimeouts, [:pointer, RubySerial::Win32::CommTimeouts], :int32, blocking: true
   end
 end

@@ -211,12 +211,12 @@ module RubySerial
               :c_ospeed, :uint
     end
 
-    attach_function :ioctl, [ :int, :ulong, RubySerial::Posix::Termios], :int
-    attach_function :tcsetattr, [ :int, :int, RubySerial::Posix::Termios ], :int
-    attach_function :fcntl, [:int, :int, :varargs], :int
-    attach_function :open, [:pointer, :int], :int
-    attach_function :close, [:int], :int
-    attach_function :write, [:int, :pointer,  :int],:int
-    attach_function :read, [:int, :pointer,  :int],:int
+    attach_function :ioctl, [ :int, :ulong, RubySerial::Posix::Termios], :int, blocking: true
+    attach_function :tcsetattr, [ :int, :int, RubySerial::Posix::Termios ], :int, blocking: true
+    attach_function :fcntl, [:int, :int, :varargs], :int, blocking: true
+    attach_function :open, [:pointer, :int], :int, blocking: true
+    attach_function :close, [:int], :int, blocking: true
+    attach_function :write, [:int, :pointer,  :int],:int, blocking: true
+    attach_function :read, [:int, :pointer,  :int],:int, blocking: true
   end
 end
