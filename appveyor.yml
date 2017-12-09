@@ -4,7 +4,7 @@ platform:
 install:
   - SET PATH=C:\Ruby%ruby_version%\bin;%PATH%
   - ruby -v
-  - gem install bundler
+  - gem install bundler --force
   - bundle install
   - ps: Start-FileDownload https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/com0com.cer
   - ps: C:\"Program Files"\"Microsoft SDKs"\Windows\v7.1\Bin\CertMgr.exe /add com0com.cer /s /r localMachine root
@@ -16,13 +16,14 @@ install:
 
 test_script:
   - SET CODECLIMATE_REPO_TOKEN=70754a8aa666790236dbbb910727648f4dbb1f73a28f886d0b0c9e39a36b5a79
-  - bundle exec rspec -fd
+  - bundle exec rspec -fd && bundle exec codeclimate-test-reporter
 
 environment:
   matrix:
+    - ruby_version: 24
+    - ruby_version: 23
     - ruby_version: 22
     - ruby_version: 21
     - ruby_version: 200
-    - ruby_version: 193
 
 build: off
