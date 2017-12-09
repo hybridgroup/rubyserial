@@ -3,4 +3,5 @@ source "http://rubygems.org"
 
 gemspec
 gem 'rspec', '~> 3.0.0'
-gem "codeclimate-test-reporter", group: :test, require: nil
+gem 'simplecov', require: false, group: :test
+gem "codeclimate-test-reporter", '~> 1.0', group: :test, require: false

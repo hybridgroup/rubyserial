@@ -1,20 +1,28 @@
+dist: trusty
+sudo: false
 language: ruby
+addons:
+  apt:
+    packages:
+      - socat
+env:
+  - RUBYOPT=-rbundler/deprecate # workaround for bundler on rbx
 rvm:
-  - 2.3.1
+  - 2.4
+  - 2.3
   - 2.2
   - 2.1
   - jruby-9.1.2.0
-  - rbx-2
+  - rbx-3
   - ruby-head
   - jruby-head
 matrix:
   allow_failures:
-    - rvm: jruby-head
+    - rvm: rbx-3
     - rvm: ruby-head
+    - rvm: jruby-head
 before_install:
-  - gem query -i -n ^bundler$ -v'>=1.12.5' >/dev/null || gem install bundler
-install:
-  - sudo apt-get update && sudo apt-get install --force-yes socat
+  - gem install bundler --force
 script:
-  - bundle install
-  - CODECLIMATE_REPO_TOKEN=70754a8aa666790236dbbb910727648f4dbb1f73a28f886d0b0c9e39a36b5a79 bundle exec rspec -fd
+  - export CODECLIMATE_REPO_TOKEN=70754a8aa666790236dbbb910727648f4dbb1f73a28f886d0b0c9e39a36b5a79
+  - bundle exec ruby -rbundler/deprecate -S rspec -fd && bundle exec ruby -rbundler/deprecate -S codeclimate-test-reporter
