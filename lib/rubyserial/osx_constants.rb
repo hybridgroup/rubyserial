@@ -17,6 +17,7 @@ module RubySerial
     VTIME = 17
     CLOCAL = 0x00008000
     CREAD = 0x00000800
+    CCTS_OFLOW = 0x00010000 # Clearing this disables RTS AND CTS.
     TCSANOW = 0
     NCCS = 20
 

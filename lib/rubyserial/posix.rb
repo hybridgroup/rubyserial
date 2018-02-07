@@ -117,8 +117,12 @@ class Serial
     config[:c_cflag]  = RubySerial::Posix::DATA_BITS[data_bits] |
       RubySerial::Posix::CREAD |
       RubySerial::Posix::CLOCAL |
-      RubySerial::Posix::BAUDE_RATES[baude_rate] |
       RubySerial::Posix::PARITY[parity]
+
+    # Masking in baud rate on OS X would corrupt the settings.
+    if RubySerial::ON_LINUX
+      config[:c_cflag] = config[:c_cflag] | RubySerial::Posix::BAUDE_RATES[baude_rate]
+    end
 
     config[:cc_c][RubySerial::Posix::VMIN] = 0
 
