@@ -1,7 +1,7 @@
 # Copyright (c) 2014-2016 The Hybrid Group
 
 class Serial
-  def initialize(address, baude_rate=9600, data_bits=8, parity=:none)
+  def initialize(address, baude_rate=9600, data_bits=8, parity=:none, stop_bits=1)
     if parity != :none
       warn "warning: parity #{parity} is not supported on Windows.  Ignoring."
     end
@@ -22,7 +22,7 @@ class Serial
       end
       dcb[:baudrate] = baude_rate
       dcb[:bytesize] = data_bits
-      dcb[:stopbits] = RubySerial::Win32::DCB::ONESTOPBIT
+      dcb[:stopbits] = RubySerial::Win32::DCB::STOPBITS[stop_bits]
       dcb[:parity]   = RubySerial::Win32::DCB::NOPARITY
       err = RubySerial::Win32.SetCommState @fd, dcb
       if err == 0

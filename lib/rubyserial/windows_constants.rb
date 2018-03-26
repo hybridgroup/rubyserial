@@ -252,6 +252,13 @@ module RubySerial
                                         #   uint32 fDummy2 :17;
       Sizeof      = 28
       ONESTOPBIT  = 0
+      TWOSTOPBITS  = 2
+
+      STOPBITS = {
+        1 => ONESTOPBIT,
+        2 => TWOSTOPBITS
+      }
+
       NOPARITY    = 0
     end
 

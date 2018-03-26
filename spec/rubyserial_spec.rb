@@ -148,5 +148,23 @@ describe "rubyserial" do
       @sp.write("Hello!\n")
       expect(@sp2.gets).to eql("Hello!\n")
     end
+
+    it 'should accept 1 stop bit' do
+      @sp2.close
+      @sp.close
+      @sp2 = Serial.new(@ports[0], 19200, 8, :none, 1)
+      @sp = Serial.new(@ports[1], 19200, 8, :none, 1)
+      @sp.write("Hello!\n")
+      expect(@sp2.gets).to eql("Hello!\n")
+    end
+
+    it 'should accept 2 stop bits' do
+      @sp2.close
+      @sp.close
+      @sp2 = Serial.new(@ports[0], 19200, 8, :none, 2)
+      @sp = Serial.new(@ports[1], 19200, 8, :none, 2)
+      @sp.write("Hello!\n")
+      expect(@sp2.gets).to eql("Hello!\n")
+    end
   end
 end

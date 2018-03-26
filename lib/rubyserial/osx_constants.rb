@@ -16,7 +16,8 @@ module RubySerial
     VMIN = 16
     VTIME = 17
     CLOCAL = 0x00008000
-    CREAD = 0x00000800
+    CSTOPB = 0x00000400
+    CREAD  = 0x00000800
     CCTS_OFLOW = 0x00010000 # Clearing this disables RTS AND CTS.
     TCSANOW = 0
     NCCS = 20
@@ -58,6 +59,11 @@ module RubySerial
       :none => 0x00000000,
       :even => PARENB,
       :odd => PARENB | PARODD,
+    }
+
+    STOPBITS = {
+      1 => 0x00000000,
+      2 => CSTOPB
     }
 
     ERROR_CODES = {
