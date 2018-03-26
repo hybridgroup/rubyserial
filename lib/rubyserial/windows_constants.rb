@@ -260,6 +260,13 @@ module RubySerial
       }
 
       NOPARITY    = 0
+      ODDPARITY   = 1
+      EVENPARITY  = 2
+      PARITY = {
+        :none => NOPARITY,
+        :odd  => ODDPARITY,
+        :even => EVENPARITY
+      }
     end
 
     class CommTimeouts < FFI::Struct
