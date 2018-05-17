@@ -16,7 +16,8 @@ module RubySerial
     IGNPAR = 0000004
     PARENB = 0000400
     PARODD = 0001000
-    CREAD = 0000200
+    CSTOPB = 0000100
+    CREAD  = 0000200
     CLOCAL = 0004000
     VMIN = 6
     NCCS = 19
@@ -66,6 +67,11 @@ module RubySerial
       :none => 0000000,
       :even => PARENB,
       :odd => PARENB | PARODD,
+    }
+
+    STOPBITS = {
+      1 => 0x00000000,
+      2 => CSTOPB
     }
 
     ERROR_CODES = {
