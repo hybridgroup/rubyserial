@@ -49,25 +49,28 @@ A wrapper error type that returns the underlying system error code and inherits 
 
 The test suite is written using rspec, just use the `rspec` command.
 
-However, to run the tests, you must also have the `socat` utility program installed.
+### Test dependencies
 
-### Installing socat on OS X
+To run the tests on OS X and Linux, you must also have the `socat` utility program installed.
+
+#### Installing socat on OS X
 
 ```
 brew install socat
 ```
 
-### Installing socat on Linux
+#### Installing socat on Linux
 
 ```
 sudo apt-get install socat
 ```
 
-### Installing socat on Windows
+#### Test on Windows
 
-You might need to build from source... the latest build of socat for Windows is quite old. Get source from here:
+To run the tests on Windows requires com0com which can be downloaded from here:
 
-http://www.dest-unreach.org/socat/download/
+https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
+
 
 ## License
 

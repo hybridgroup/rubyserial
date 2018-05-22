@@ -2,9 +2,6 @@
 
 class Serial
   def initialize(address, baude_rate=9600, data_bits=8, parity=:none, stop_bits=1)
-    if parity != :none
-      warn "warning: parity #{parity} is not supported on Windows.  Ignoring."
-    end
     file_opts = RubySerial::Win32::GENERIC_READ | RubySerial::Win32::GENERIC_WRITE
     @fd = RubySerial::Win32.CreateFileA("\\\\.\\#{address}", file_opts, 0, nil, RubySerial::Win32::OPEN_EXISTING, 0, nil)
     err = FFI.errno
@@ -23,7 +20,7 @@ class Serial
       dcb[:baudrate] = baude_rate
       dcb[:bytesize] = data_bits
       dcb[:stopbits] = RubySerial::Win32::DCB::STOPBITS[stop_bits]
-      dcb[:parity]   = RubySerial::Win32::DCB::NOPARITY
+      dcb[:parity]   = RubySerial::Win32::DCB::PARITY[parity]
       err = RubySerial::Win32.SetCommState @fd, dcb
       if err == 0
         raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
