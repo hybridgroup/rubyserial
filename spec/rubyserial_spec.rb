@@ -168,6 +168,7 @@ describe "rubyserial" do
     end
 
     it 'should set baude rate, check #46 fixed' do
+      skip 'Not a bug on Windows' if RubySerial::ON_WINDOWS
       @sp.close
       rate = 600
       @sp = Serial.new(@ports[1], rate)
