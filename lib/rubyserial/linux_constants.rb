@@ -20,7 +20,7 @@ module RubySerial
     CREAD  = 0000200
     CLOCAL = 0004000
     VMIN = 6
-    NCCS = 19
+    NCCS = 32
 
     DATA_BITS = {
       5 => 0000000,
