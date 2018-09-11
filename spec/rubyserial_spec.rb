@@ -166,5 +166,21 @@ describe "rubyserial" do
       @sp.write("Hello!\n")
       expect(@sp2.gets).to eql("Hello!\n")
     end
+
+    it 'should set baude rate, check #46 fixed' do
+      skip 'Not a bug on Windows' if RubySerial::ON_WINDOWS
+      @sp.close
+      rate = 600
+      @sp = Serial.new(@ports[1], rate)
+      fd = @sp.instance_variable_get(:@fd)
+      module RubySerial
+        module Posix
+          attach_function :tcgetattr, [ :int, RubySerial::Posix::Termios ], :int, blocking: true
+        end
+      end
+      termios = RubySerial::Posix::Termios.new
+      RubySerial::Posix::tcgetattr(fd, termios)
+      expect(termios[:c_ispeed]).to eql(RubySerial::Posix::BAUDE_RATES[rate])
+    end
   end
 end
