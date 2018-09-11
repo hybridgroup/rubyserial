@@ -1,7 +1,7 @@
-# Copyright (c) 2014-2017 The Hybrid Group and Friends
+# Copyright (c) 2014-2018 The Hybrid Group and Friends
 
 module RubySerial
   unless const_defined?('VERSION')
-    VERSION = "0.5.0"
+    VERSION = "0.6.0"
   end
 end
