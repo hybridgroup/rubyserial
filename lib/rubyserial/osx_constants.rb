@@ -21,6 +21,7 @@ module RubySerial
     CCTS_OFLOW = 0x00010000 # Clearing this disables RTS AND CTS.
     TCSANOW = 0
     NCCS = 20
+    IOSSIOSPEED = 0x80045402 # ioctl request for OSX custom baud rate
 
     DATA_BITS = {
       5 => 0x00000000,
@@ -188,6 +189,7 @@ module RubySerial
 
     attach_function :tcsetattr, [ :int, :int, RubySerial::Posix::Termios ], :int, blocking: true
     attach_function :fcntl, [:int, :int, :varargs], :int, blocking: true
+    attach_function :ioctl, [:int, :ulong, :pointer], :int, blocking: true
     attach_function :open, [:pointer, :int], :int, blocking: true
     attach_function :close, [:int], :int, blocking: true
     attach_function :write, [:int, :pointer,  :int],:int, blocking: true

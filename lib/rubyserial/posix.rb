@@ -21,12 +21,7 @@ class Serial
       raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
     end
 
-    @config = build_config(baude_rate, data_bits, parity, stop_bits)
-
-    err = RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
-    if err == -1
-      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
+    set_termios_attrs(baude_rate, data_bits, parity, stop_bits)
   end
 
   def closed?
@@ -108,12 +103,29 @@ class Serial
     bytes.map { |e| e.chr }.join
   end
 
+  def set_termios_attrs(baude_rate, data_bits, parity, stop_bits)
+    @config = build_config(baude_rate, data_bits, parity, stop_bits)
+
+    err = RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
+    if err == -1
+      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
+    end
+
+    set_custom_baud_rate(baude_rate) if osx_custom_speed?(baude_rate)
+  end
+
   def build_config(baude_rate, data_bits, parity, stop_bits)
     config = RubySerial::Posix::Termios.new
 
+    # Use a standard speed of 9600 for tcsetattr config if we are on OSX
+    # and trying to set non-standard speed value. We can later set it using ioctl 
+    tc_baude_rate = RubySerial::Posix::BAUDE_RATES[
+      osx_custom_speed?(baude_rate) ? 9600 : baude_rate
+    ]
+
     config[:c_iflag]  = RubySerial::Posix::IGNPAR
-    config[:c_ispeed] = RubySerial::Posix::BAUDE_RATES[baude_rate]
-    config[:c_ospeed] = RubySerial::Posix::BAUDE_RATES[baude_rate]
+    config[:c_ispeed] = tc_baude_rate
+    config[:c_ospeed] = tc_baude_rate
     config[:c_cflag]  = RubySerial::Posix::DATA_BITS[data_bits] |
       RubySerial::Posix::CREAD |
       RubySerial::Posix::CLOCAL |
@@ -128,5 +140,20 @@ class Serial
     config[:cc_c][RubySerial::Posix::VMIN] = 0
 
     config
+  end
+
+  def osx_custom_speed?(baude_rate)
+    !RubySerial::ON_LINUX && !RubySerial::Posix::BAUDE_RATES[baude_rate]
+  end
+
+  def set_custom_baud_rate(baude_rate)
+    rate_pointer = FFI::MemoryPointer.new(:uint, 1)
+    rate_pointer.put(:uint, 0, baude_rate)
+
+    err = RubySerial::Posix.ioctl(@fd, RubySerial::Posix::IOSSIOSPEED, rate_pointer)
+    
+    if err == -1
+      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
+    end
   end
 end
