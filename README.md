@@ -2,7 +2,7 @@
 
 RubySerial is a simple Ruby gem for reading from and writing to serial ports.
 
-Unlike other Ruby serial port implementations, it supports all of the most popular Ruby implementations (MRI, JRuby, & Rubinius) on the most popular operating systems (OSX, Linux, & Windows). And it does not require any native compilation thanks to using RubyFFI [https://github.com/ffi/ffi](https://github.com/ffi/ffi).
+Unlike other Ruby serial port implementations, it supports all of the most popular Ruby implementations (MRI, JRuby, & Rubinius) on the most popular operating systems (macOS, Linux, FreeBSD & Windows). And it does not require any native compilation thanks to using RubyFFI [https://github.com/ffi/ffi](https://github.com/ffi/ffi).
 
 The interface to RubySerial should be (mostly) compatible with other Ruby serialport gems, so you should be able to drop in the new gem, change the `require` and use it as a replacement. If not, please let us know so we can address any issues.
 
@@ -51,9 +51,9 @@ The test suite is written using rspec, just use the `rspec` command.
 
 ### Test dependencies
 
-To run the tests on OS X and Linux, you must also have the `socat` utility program installed.
+To run the tests on macOS, Linux and FreeBSD, you must also have the `socat` utility program installed.
 
-#### Installing socat on OS X
+#### Installing socat on macOS
 
 ```
 brew install socat
@@ -63,6 +63,12 @@ brew install socat
 
 ```
 sudo apt-get install socat
+```
+
+#### Installing socat on FreeBSD
+
+```
+pkg install socat
 ```
 
 #### Test on Windows

@@ -6,6 +6,7 @@ require 'ffi'
 module RubySerial
   ON_WINDOWS = RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
   ON_LINUX = RbConfig::CONFIG['host_os'] =~ /linux/i
+  ON_FREEBSD = RbConfig::CONFIG['host_os'] =~ /freebsd/i
   class Error < IOError
   end
 end
@@ -16,8 +17,10 @@ if RubySerial::ON_WINDOWS
 else
   if RubySerial::ON_LINUX
     require 'rubyserial/linux_constants'
+  elsif RubySerial::ON_FREEBSD
+    require 'rubyserial/freebsd_constants'
   else
-    require 'rubyserial/osx_constants'
+    require 'rubyserial/darwin_constants'
   end
   require 'rubyserial/posix'
 end
