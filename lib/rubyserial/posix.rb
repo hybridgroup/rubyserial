@@ -1,7 +1,7 @@
 # Copyright (c) 2014-2016 The Hybrid Group
 
 class Serial
-  def initialize(address, baude_rate=9600, data_bits=8, parity=:none, stop_bits=1)
+  def initialize(address, baud_rate=9600, data_bits=8, parity=:none, stop_bits=1)
     file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY | RubySerial::Posix::O_NONBLOCK
     @fd = RubySerial::Posix.open(address, file_opts)
 
@@ -21,7 +21,7 @@ class Serial
       raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
     end
 
-    @config = build_config(baude_rate, data_bits, parity, stop_bits)
+    @config = build_config(baud_rate, data_bits, parity, stop_bits)
 
     err = RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
     if err == -1
@@ -108,21 +108,21 @@ class Serial
     bytes.map { |e| e.chr }.join
   end
 
-  def build_config(baude_rate, data_bits, parity, stop_bits)
+  def build_config(baud_rate, data_bits, parity, stop_bits)
     config = RubySerial::Posix::Termios.new
 
     config[:c_iflag]  = RubySerial::Posix::IGNPAR
-    config[:c_ispeed] = RubySerial::Posix::BAUDE_RATES[baude_rate]
-    config[:c_ospeed] = RubySerial::Posix::BAUDE_RATES[baude_rate]
+    config[:c_ispeed] = RubySerial::Posix::BAUD_RATES[baud_rate]
+    config[:c_ospeed] = RubySerial::Posix::BAUD_RATES[baud_rate]
     config[:c_cflag]  = RubySerial::Posix::DATA_BITS[data_bits] |
       RubySerial::Posix::CREAD |
       RubySerial::Posix::CLOCAL |
       RubySerial::Posix::PARITY[parity] |
       RubySerial::Posix::STOPBITS[stop_bits]
 
-    # Masking in baud rate on OS X would corrupt the settings.
+    # Masking in baud rate on macOS would corrupt the settings.
     if RubySerial::ON_LINUX
-      config[:c_cflag] = config[:c_cflag] | RubySerial::Posix::BAUDE_RATES[baude_rate]
+      config[:c_cflag] = config[:c_cflag] | RubySerial::Posix::BAUD_RATES[baud_rate]
     end
 
     config[:cc_c][RubySerial::Posix::VMIN] = 0

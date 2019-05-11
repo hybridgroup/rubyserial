@@ -8,10 +8,9 @@ addons:
 env:
   - RUBYOPT=-rbundler/deprecate # workaround for bundler on rbx
 rvm:
+  - 2.6
+  - 2.5
   - 2.4
-  - 2.3
-  - 2.2
-  - 2.1
   - jruby-9.1.2.0
   - rbx-3
   - ruby-head

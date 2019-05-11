@@ -167,7 +167,7 @@ describe "rubyserial" do
       expect(@sp2.gets).to eql("Hello!\n")
     end
 
-    it 'should set baude rate, check #46 fixed' do
+    it 'should set baud rate, check #46 fixed' do
       skip 'Not a bug on Windows' if RubySerial::ON_WINDOWS
       @sp.close
       rate = 600
@@ -180,7 +180,7 @@ describe "rubyserial" do
       end
       termios = RubySerial::Posix::Termios.new
       RubySerial::Posix::tcgetattr(fd, termios)
-      expect(termios[:c_ispeed]).to eql(RubySerial::Posix::BAUDE_RATES[rate])
+      expect(termios[:c_ispeed]).to eql(RubySerial::Posix::BAUD_RATES[rate])
     end
   end
 end

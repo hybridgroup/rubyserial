@@ -5,22 +5,23 @@ module RubySerial
   extend FFI::Library
     ffi_lib FFI::Library::LIBC
 
-    O_RDWR = 0x0002
-    O_NOCTTY = 0x20000
     O_NONBLOCK = 0x0004
+    O_NOCTTY = 0x20000
+    O_RDWR = 0x0002
     F_GETFL = 3
     F_SETFL = 4
+    VTIME = 17
+    TCSANOW = 0
+
     IGNPAR = 0x00000004
     PARENB = 0x00001000
     PARODD = 0x00002000
-    VMIN = 16
-    VTIME = 17
-    CLOCAL = 0x00008000
     CSTOPB = 0x00000400
     CREAD  = 0x00000800
-    CCTS_OFLOW = 0x00010000 # Clearing this disables RTS AND CTS.
-    TCSANOW = 0
+    CLOCAL = 0x00008000
+    VMIN = 16
     NCCS = 20
+    CCTS_OFLOW = 0x00010000 # Clearing this disables RTS AND CTS.
 
     DATA_BITS = {
       5 => 0x00000000,
@@ -29,7 +30,7 @@ module RubySerial
       8 => 0x00000300
     }
 
-    BAUDE_RATES = {
+    BAUD_RATES = {
       0 => 0,
       50 => 50,
       75 => 75,
