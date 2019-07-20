@@ -172,7 +172,7 @@ describe "rubyserial" do
       @sp.close
       rate = 600
       @sp = Serial.new(@ports[1], rate)
-      fd = @sp.instance_variable_get(:@fd)
+      fd = @sp.send :fd
       module RubySerial
         module Posix
           attach_function :tcgetattr, [ :int, RubySerial::Posix::Termios ], :int, blocking: true
@@ -180,7 +180,7 @@ describe "rubyserial" do
       end
       termios = RubySerial::Posix::Termios.new
       RubySerial::Posix::tcgetattr(fd, termios)
-      expect(termios[:c_ispeed]).to eql(RubySerial::Posix::BAUDE_RATES[rate])
+      expect(termios[:c_ispeed]).to eql(RubySerial::Posix::BAUD_RATES[rate])
     end
   end
 end

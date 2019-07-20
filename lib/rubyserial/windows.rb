@@ -1,116 +1,178 @@
 # Copyright (c) 2014-2016 The Hybrid Group
 
-class Serial
-  def initialize(address, baude_rate=9600, data_bits=8, parity=:none, stop_bits=1)
-    file_opts = RubySerial::Win32::GENERIC_READ | RubySerial::Win32::GENERIC_WRITE
-    @fd = RubySerial::Win32.CreateFileA("\\\\.\\#{address}", file_opts, 0, nil, RubySerial::Win32::OPEN_EXISTING, 0, nil)
-    err = FFI.errno
-    if err != 0
-      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[err]
-    else
-      @open = true
-    end
+class RubySerial::Builder
+  def self.build(address: , parent: IO, baud: 9600, data_bits: 8, parity: :none, stop_bits: 1, blocking: true, clear_config: true, winfix: :auto) # TODO: blocking & clear_config
+    fd = IO::sysopen("\\\\.\\#{address}", File::RDWR)
 
-    RubySerial::Win32::DCB.new.tap do |dcb|
-      dcb[:dcblength] = RubySerial::Win32::DCB::Sizeof
-      err = RubySerial::Win32.GetCommState @fd, dcb
-      if err == 0
-        raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
+    # enable blocking mode TODO
+
+    hndl = RubySerial::WinC._get_osfhandle(fd)
+    # TODO: check errno
+
+    winfix_out = [] # TODO: remove winfix
+    # Update the terminal settings
+    _reconfigure(winfix_out, hndl, clear_config, baud: baud, data_bits: data_bits, parity: parity, stop_bits: stop_bits) # TODO: min: (blocking ? 1 : 0),
+
+    ffi_call :SetupComm, hndl, 64, 64
+
+    win32_update_readmode :blocking, hndl
+
+    file = parent.send(:for_fd, fd, File::RDWR)
+    # windows has no idea
+    #unless file.tty?
+    #  raise ArgumentError, "not a serial port: #{address}"
+    #end
+    file._win32_hndl = hndl
+    file._winfix = winfix
+    #file.dtr = false
+    [file, address, fd]
+  end
+
+  WIN32_READMODES = {
+    :blocking => [0, 0, 0],
+    :partial => [2, 0, 0],
+    :nonblocking => [0xffff_ffff, 0, 0]
+  }
+
+  def self.win32_update_readmode(mode, hwnd)
+    t = RubySerial::Win32::CommTimeouts.new
+    ffi_call :GetCommTimeouts, hwnd, t
+    raise "ack TODO" if WIN32_READMODES[mode].nil?
+    t[:read_interval_timeout], t[:read_total_timeout_multiplier], t[:read_total_timeout_constant] = *WIN32_READMODES[mode]
+      # do we need to set these?
+      #timeouts[:write_total_timeout_multiplier] #= 1
+      #timeouts[:write_total_timeout_constant]   #= 10
+  #    puts "comT: #{w32_pct t}"
+   ffi_call :SetCommTimeouts, hwnd, t
+  end
+
+
+
+  def self._reconfigure(io, hndl, clear_config, hupcl: nil, baud: nil, data_bits: nil, parity: nil, stop_bits: nil, min: nil)
+
+
+    # Update the terminal settings
+    dcb = RubySerial::Win32::DCB.new
+    dcb[:dcblength] = RubySerial::Win32::DCB::Sizeof
+    ffi_call :GetCommState, hndl, dcb
+      dcb[:baudrate] = baud if baud
+      dcb[:bytesize] = data_bits if data_bits
+      dcb[:stopbits] = RubySerial::Win32::DCB::STOPBITS[stop_bits] if stop_bits
+      dcb[:parity]   = RubySerial::Win32::DCB::PARITY[parity] if parity
+
+      dcb[:flags] &= ~(0x3000) # clear
+      #doreset =
+      unless hupcl.nil?
+      cfl = (dcb[:flags] & 48) / 16
+      dtr = hupcl
+      rts = hupcl ? 0 : 0
+ #     p cfl
+      dcb[:flags] &= ~(48 + 0x3000) # clear
+      dcb[:flags] |= 16 if dtr # set
+      dcb[:flags] |= 0x1000*rts  # set
+      if cfl > 0 && !dtr
+        # TODO: ???
       end
-      dcb[:baudrate] = baude_rate
-      dcb[:bytesize] = data_bits
-      dcb[:stopbits] = RubySerial::Win32::DCB::STOPBITS[stop_bits]
-      dcb[:parity]   = RubySerial::Win32::DCB::PARITY[parity]
-      err = RubySerial::Win32.SetCommState @fd, dcb
-      if err == 0
-        raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
       end
-    end
+#    dcb[:flags] &= ~48
+# DTR control
+  #p dcb[:flags] # 4225, binary, txcontinuexonxoff, rtscontrol=1
+  #p w32_dab(dcb)
+  #4241 = 4225 +fDtrControl=1
+   ffi_call :SetCommState, hndl, dcb
 
-    RubySerial::Win32::CommTimeouts.new.tap do |timeouts|
-      timeouts[:read_interval_timeout]          = 10
-      timeouts[:read_total_timeout_multiplier]  = 1
-      timeouts[:read_total_timeout_constant]    = 10
-      timeouts[:write_total_timeout_multiplier] = 1
-      timeouts[:write_total_timeout_constant]   = 10
-      err = RubySerial::Win32.SetCommTimeouts @fd, timeouts
-      if err == 0
-        raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
-      end
-    end
   end
 
-  def read(size)
-    buff = FFI::MemoryPointer.new :char, size
-    count = FFI::MemoryPointer.new :uint32, 1
-    err = RubySerial::Win32.ReadFile(@fd, buff, size, count, nil)
-    if err == 0
-      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
-    end
-    buff.get_bytes(0, count.read_int)
+  def self.w32_dab(t)
+  [ :dcblength,
+              :baudrate,
+              :flags,
+              :wreserved,
+              :xonlim,
+              :xofflim,
+              :bytesize,
+              :parity,
+              :stopbits,
+              :xonchar,
+              :xoffchar,
+              :errorchar,
+              :eofchar,
+              :evtchar,
+              :wreserved1].map{|x|t[x]}
   end
 
-  def getbyte
-    buff = FFI::MemoryPointer.new :char, 1
-    count = FFI::MemoryPointer.new :uint32, 1
-    err = RubySerial::Win32.ReadFile(@fd, buff, 1, count, nil)
-    if err == 0
-      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
-    end
+  def self.w32_pct(t)
+    [:read_interval_timeout,
+              :read_total_timeout_multiplier,
+              :read_total_timeout_constant,
+              :write_total_timeout_multiplier,
+              :write_total_timeout_constant].map{|f| t[f]}
+  end
 
-    if count.read_int == 0
-      nil
+  def self.ffi_call who, *args
+     res = RubySerial::Win32.send who, *args
+     if res == 0
+       raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
+     end
+   res
+  end
+
+end
+# Copyright (c) 2014-2016 The Hybrid Group
+
+module RubySerial::Includes
+  def readpartial(*args, _bypass: false)
+    change_win32_mode :partial unless _bypass
+    super(*args)
+  end
+
+  def read_nonblock(maxlen, buf=nil, exception: true)
+    change_win32_mode :nonblocking
+    if buf.nil?
+      readpartial(maxlen, _bypass: true)
     else
-      buff.get_bytes(0, 1).bytes.first
+      readpartial(maxlen, buf, _bypass: true)
+    end
+  rescue EOFError
+    raise IO::EAGAINWaitReadable, "Resource temporarily unavailable - read would block"
+  end
+
+  [:read, :pread, :readbyte, :readchar, :readline, :readlines, :sysread, :getbyte, :getc, :gets].each do |name|
+    define_method name do |*args|
+      change_win32_mode :blocking
+      super(*args)
     end
   end
 
-  def write(data)
-    buff = FFI::MemoryPointer.from_string(data.to_s)
-    count = FFI::MemoryPointer.new :uint32, 1
-    err = RubySerial::Win32.WriteFile(@fd, buff, buff.size-1, count, nil)
-    if err == 0
-      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
-    end
-    count.read_int
+  def write_nonblock(*args)
+    # TODO: support write_nonblock on windows
+    write(*args)
   end
 
-  def gets(sep=$/, limit=nil)
-    if block_given?
-      loop do
-        yield(get_until_sep(sep, limit))
-      end
-    else
-      get_until_sep(sep, limit)
-    end
+  def change_win32_mode type
+    return if @_win32_curr_read_mode == type
+    # Ugh, have to change the mode now
+    RubySerial::Builder.win32_update_readmode(type, @_rs_hwnd)
+    @_win32_curr_read_mode = type
   end
 
-  def close
-    err = RubySerial::Win32.CloseHandle(@fd)
-    if err == 0
-      raise RubySerial::Error, RubySerial::Win32::ERROR_CODES[FFI.errno]
-    else
-      @open = false
-    end
+  def _win32_hndl= hwnd
+    @_rs_hwnd = hwnd
+    @_win32_curr_read_mode = :blocking
   end
 
-  def closed?
-    !@open
+  def reconfigure(clear_config, hupcl: nil, baud: nil, data_bits: nil, parity: nil, stop_bits: nil, min: nil)
+    RubySerial::Builder._reconfigure(self, @_rs_hwnd, clear_config, hupcl: hupcl, baud: baud, data_bits: data_bits, parity: parity, stop_bits: stop_bits, min: min)
   end
 
-  private
+  def dtr= val
+    RubySerial::Builder.ffi_call :EscapeCommFunction, @_rs_hwnd, (val ? 5 : 6)
+  end
 
-  def get_until_sep(sep, limit)
-    sep = "\n\n" if sep == ''
-    # This allows the method signature to be (sep) or (limit)
-    (limit = sep; sep="\n") if sep.is_a? Integer
-    bytes = []
-    loop do
-      current_byte = getbyte
-      bytes << current_byte unless current_byte.nil?
-      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes.to_a) || ((bytes.size == limit) if limit)
-    end
+  def rts= val
+    RubySerial::Builder.ffi_call :EscapeCommFunction, @_rs_hwnd, (val ? 3 : 4)
+  end
 
-    bytes.map { |e| e.chr }.join
+  def _winfix= val
   end
 end

@@ -13,14 +13,22 @@ module RubySerial
     IGNPAR = 0x00000004
     PARENB = 0x00001000
     PARODD = 0x00002000
+    PARITY_FIELD = PARENB | PARODD
     VMIN = 16
     VTIME = 17
     CLOCAL = 0x00008000
     CSTOPB = 0x00000400
     CREAD  = 0x00000800
     CCTS_OFLOW = 0x00010000 # Clearing this disables RTS AND CTS.
+    CRTS_IFLOW = 0x00020000
     TCSANOW = 0
     NCCS = 20
+    IXON = 0x00000200
+    IXOFF = 0x00000400
+    IXANY = 0x00000800
+    CRTSCTS = CCTS_OFLOW | CRTS_IFLOW
+    CSIZE = 0x00000300
+    HUPCL = 0x00004000
 
     DATA_BITS = {
       5 => 0x00000000,
@@ -29,7 +37,7 @@ module RubySerial
       8 => 0x00000300
     }
 
-    BAUDE_RATES = {
+    BAUD_RATES = {
       0 => 0,
       50 => 50,
       75 => 75,
@@ -187,10 +195,7 @@ module RubySerial
     end
 
     attach_function :tcsetattr, [ :int, :int, RubySerial::Posix::Termios ], :int, blocking: true
+    attach_function :tcgetattr, [ :int, RubySerial::Posix::Termios ], :int, blocking: true
     attach_function :fcntl, [:int, :int, :varargs], :int, blocking: true
-    attach_function :open, [:pointer, :int], :int, blocking: true
-    attach_function :close, [:int], :int, blocking: true
-    attach_function :write, [:int, :pointer,  :int],:int, blocking: true
-    attach_function :read, [:int, :pointer,  :int],:int, blocking: true
   end
 end
