@@ -1,8 +1,11 @@
 # Copyright (c) 2014-2016 The Hybrid Group
+# Copyright (c) 2019 Patrick Plenefisch
 
 module RubySerial
+  # @api private
+  # @!visibility private
   module Posix
-  extend FFI::Library
+    extend FFI::Library
     ffi_lib FFI::Library::LIBC
 
     O_NONBLOCK = 00004000

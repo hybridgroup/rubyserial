@@ -1,14 +1,25 @@
 # Copyright (c) 2014-2016 The Hybrid Group
+# Copyright (c) 2019 Patrick Plenefisch
 
 require 'rbconfig'
 require 'ffi'
 
+##
+# Low-level API. May change between minor releases. For stability, see {Serial} or {SerialPort}.
+# To build serial ports with this API, see {RubySerial::Builder}
 module RubySerial
+  # @!visibility private
   ON_WINDOWS = RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
+  # @!visibility private
   ON_LINUX = RbConfig::CONFIG['host_os'] =~ /linux/i
+
+  # Error thrown for most RubySerial-specific operations. Originates
+  # from ffi errors.
   class Error < IOError
   end
 end
+
+require 'rubyserial/configuration'
 
 # Load the appropriate RubySerial::Builder
 if RubySerial::ON_WINDOWS
@@ -23,22 +34,31 @@ else
   require 'rubyserial/posix'
 end
 
-# Generic IO interface
+# Mid-level API. A simple no-fluff serial port interface. Is an IO object.
 class SerialIO < IO
   include RubySerial::Includes
-  def self.new(address, baud_rate=9600, data_bits=8, parity=:none, stop_bits=1, parent: SerialIO, blocking: true)
-    serial, name, fd = RubySerial::Builder.build(parent: parent, address: address, baud: baud_rate, data_bits: data_bits, parity: parity, stop_bits: stop_bits, blocking: blocking)
-    serial.send :name=, name
+  ##
+  # Creates a new {SerialIO} object for the given serial port configuration
+  # @param [RubySerial::Configuration] config The configuration to open
+  # @param [Class] parent The parent class to instantiate. Must be a subclass of {SerialIO}
+  # @return [SerialIO] An intance of parent
+  # @raise [Errno::ENOENT] If not a valid file
+  # @raise [RubySerial::Error] If not a valid TTY device (only on non-windows platforms), or any other general FFI error
+  # @raise [ArgumentError] If arguments are invalid
+  def self.new(config, parent=SerialIO)
+    serial, fd, _ = RubySerial::Builder.build(parent, config)
+    serial.send :name=, config.device
     serial.send :fd=, fd
     serial
   end
 
-  # TODO: reconfigure, etc
-
+  # @!visibility private
+  # Don't doc Object methods
   def inspect
-    "#<#{self.class.name}:#{name}>"
+    "#<#{self.class.name}:#{name}>" # TODO: closed
   end
 
+  # @return [String] The name of the serial port
   attr_reader :name
 
   private
@@ -46,85 +66,205 @@ class SerialIO < IO
   attr_reader :fd
 end
 
-# serial-port-style interface
+# SerialPort gem style interface. Roughly compatible with the SerialPort gem. Recommended. High-level API, and stable.
 class SerialPort < IO
   include RubySerial::Includes
+  ##
+  # Creates a new {SerialPort} instance with an API roughly compatible with the SerialPort gem.
+  # @example
+  #   SerialPort.new("/dev/ttyS0", "baud" => 9600, "data_bits" => 8, "stop_bits" => 1, "parity" => :none) #=> #<SerialPort:fd 3>
+  #   SerialPort.new("/dev/ttyS0", 9600, 8, 1, :none) #=> #<SerialPort:fd 4>
+  # @param [String] device The serial port name to open
+  # @return [SerialPort] An opened serial port
+  # @raise [Errno::ENOENT] If not a valid file
+  # @raise [RubySerial::Error] Any other general FFI error
+  # @raise [ArgumentError] If not a valid TTY device (only on non-windows platforms), or if arguments are invalid
+  #
+  # @overload new(device, baud=nil, data_bits=nil, stop_bits=nil, parity=nil)
+  #   @param [Integer] baud The baud to open the serial port with, or nil to use the current baud
+  #   @param [Integer] data_bits The number of data_bits to open the serial port with, or nil to use the current data_bits
+  #   @param [Integer] stop_bits The number of stop_bits to open the serial port with, or nil to use the current stop_bits
+  #   @param [Symbol] parity The parity to open the serial port with, or nil to use the current parity. Valid values are: `:none`, `:even`, and `:odd`
+  #
+  # @overload new(device, hash)
+  #   @param [Hash<String, Object>] hash The given parameters, but as stringly-keyed values in a hash
   def self.new(device, *params)
-    raise "NNNNNNN" if device.is_a? Integer
-    listargs = *params
-    listargs = listargs["baud"], listargs["data_bits"], listargs["stop_bits"], listargs["parity"] if listargs.is_a? Hash
-    baud, data, stop, par = *listargs
+    raise ArgumentError, "Not Implemented. Please use a full path #{device}" if device.is_a? Integer
+    baud, *listargs = *params
+    baud, *listargs = baud["baud"], baud["data_bits"], baud["stop_bits"], baud["parity"] if baud.is_a? Hash and listargs == []
+    data, stop, par = *listargs
 
-    args = {parent: SerialPort,
-      address: device,
-      baud: baud,
-      blocking: true}
+    args = RubySerial::Configuration.from(device: device, baud: baud, enable_blocking: true, data_bits: data, parity: par, stop_bits: stop, clear_config: true)
 
-    # use defaults, not nil
-    args[:data_bits] = data if data
-    args[:parity] = par if par
-    args[:stop_bits] = stop if stop
-
-    serial, name, fd = RubySerial::Builder.build(**args)
-    serial.send :name=, name
-    serial.send :fd=, fd
-    serial
+    begin
+      serial, _, config = RubySerial::Builder.build(SerialPort, args)
+      serial.send :name=, device
+      serial.instance_variable_set :@config, config
+      serial
+    rescue RubySerial::Error => e
+      if e.message == "ENOTTY"
+        raise ArgumentError, "not a serial port"
+      else
+        raise
+      end
+    end
   end
 
-  def self.open(*args)
-    arg = SerialPort.new(*args)
+  ##
+  # Creates a new {SerialPort} instance with an API roughly compatible with the SerialPort gem.
+  # With no associated block, {.open} is a synonym for {.new}. If the optional code block is given,
+  # it will be passed io as an argument, and the {SerialPort} will automatically be closed when the block
+  # terminates. In this instance, {.open} returns the value of the block.
+  # @see .new
+  # @example
+  #   SerialPort.open("/dev/ttyS0", "baud" => 9600, "data_bits" => 8, "stop_bits" => 1, "parity" => :none) { |s|
+  #     s #=> #<SerialPort:fd 3>
+  #   }
+  #   SerialPort.open("/dev/ttyS0", 9600, 8, 1, :none) { |s|
+  #     s #=> #<SerialPort:fd 4>
+  #   }
+  #
+  # @raise [Errno::ENOENT] If not a valid file
+  # @raise [RubySerial::Error] Any other general FFI error
+  # @raise [ArgumentError] If not a valid TTY device (only on non-windows platforms), or if arguments are invalid
+  #
+  # @overload open(device, baud=nil, data_bits=nil, stop_bits=nil, parity=nil)
+  #   Creates a new {SerialPort} and returns it.
+  #   @return [SerialPort] An opened serial port
+  #   @param [Integer] baud The baud to open the serial port with, or nil to use the current baud
+  #   @param [Integer] data_bits The number of data_bits to open the serial port with, or nil to use the current data_bits
+  #   @param [Integer] stop_bits The number of stop_bits to open the serial port with, or nil to use the current stop_bits
+  #   @param [Symbol] parity The parity to open the serial port with, or nil to use the current parity. Valid values are: `:none`, `:even`, and `:odd`
+  # @overload open(device, hash)
+  #   Creates a new {SerialPort} and returns it.
+  #   @return [SerialPort] An opened serial port
+  #   @param [Hash<String, Object>] hash The given parameters, but as stringly-keyed values in a hash
+  # @overload open(device, baud=nil, data_bits=nil, stop_bits=nil, parity=nil)
+  #   Creates a new {SerialPort} and pass it to the provided block, closing automatically.
+  #   @return [Object] What the block returns
+  #   @yieldparam io [SerialPort] An opened serial port
+  #   @param [Integer] baud The baud to open the serial port with, or nil to use the current baud
+  #   @param [Integer] data_bits The number of data_bits to open the serial port with, or nil to use the current data_bits
+  #   @param [Integer] stop_bits The number of stop_bits to open the serial port with, or nil to use the current stop_bits
+  #   @param [Symbol] parity The parity to open the serial port with, or nil to use the current parity. Valid values are: `:none`, `:even`, and `:odd`
+  # @overload open(device, hash)
+  #   Creates a new {SerialPort} and pass it to the provided block, closing automatically.
+  #   @return [Object] What the block returns
+  #   @yieldparam io [SerialPort] An opened serial port
+  #   @param [Hash<String, Object>] hash The given parameters, but as stringly-keyed values in a hash
+  def self.open(device, *params)
+    arg = SerialPort.new(device, *params)
+    return arg unless block_given?
     begin
       yield arg
     ensure
       arg.close
     end
   end
+
   NONE = :none
-  SPACE = :space
-  MARK = :mark
   EVEN = :even
   ODD = :odd
 
+  # @return [String] the name of the serial port
+  attr_reader :name
+
+  # @!attribute hupcl
+  # @return [Boolean] the value of the hupcl flag (posix) or DtrControl is set to start high (windows). Note that you must re-open the port twice to have it take effect
   def hupcl= value
     value = !!value
-    reconfigure(false, hupcl: value)
+    @config = reconfigure(hupcl: value)
     value
   end
 
-  def baud= value
-    reconfigure(false, baud: value)
-  end
-  def data_bits= value
-    reconfigure(false, data_bits: value)
-  end
-  def parity= value
-    reconfigure(false, parity: value)
-  end
-  def stop_bits= value
-    reconfigure(false, stop_bits: value)
+  def hupcl
+    @config.hupcl
   end
 
-  def reconfigzure(**kwargs)
-    RubySerial::Builder.reconfigure(@fd, false, **kwargs)
-    kwargs.to_a[0][1]
+  # @!attribute baud
+  # @return [Integer] the baud of this serial port
+  def baud= value
+    @config = reconfigure(baud: value)
+    value
+  end
+
+  def baud
+    @config.baud
+  end
+
+  # @!attribute data_bits
+  # @return [Integer] the number of data bits (typically 8 or 7)
+  def data_bits= value
+    @config = reconfigure(data_bits: value)
+    value
+  end
+
+  def data_bits
+    @config.data_bits
+  end
+
+  # @!attribute parity
+  # @return [Symbol] the parity, one of `:none`, `:even`, or `:odd`
+  def parity= value
+    @config = reconfigure(parity: value)
+    value
+  end
+
+  def parity
+    @config.parity
+  end
+
+  # @!attribute stop_bits
+  # @return [Integer] the number of stop bits (either 1 or 2)
+  def stop_bits= value
+    @config = reconfigure(stop_bits: value)
+    value
+  end
+
+  def stop_bits
+    @config.stop_bits
   end
 
   private
-  attr_writer :name, :fd
-
+  attr_writer :name
 end
 
-# rubyserial-style interface
+# Custom rubyserial Serial interface. High-level API, and stable.
 class Serial < SerialIO
-  def self.new(address, baud_rate=9600, data_bits=8, parity=:none, stop_bits=1)
-    super(address, baud_rate, data_bits, parity, stop_bits, parent: Serial, blocking: false)
+
+  # Creates a new {Serial} instance,
+  # @example
+  #   Serial.new("/dev/ttyS0", 9600, 8, :none, 1) #=> #<Serial:/dev/ttyS0>
+  # @param [String] address The serial port name to open
+  # @param [Integer] baud_rate The baud to open the serial port with, or nil to use the current baud
+  # @param [Integer] data_bits The number of data_bits to open the serial port with, or nil to use the current data_bits
+  # @param [Integer] stop_bits The number of stop_bits to open the serial port with, or nil to use the current stop_bits
+  # @param [Boolean] enable_blocking If we should enable blocking IO. By default all IO is nonblocking
+  # @param [Symbol] parity The parity to open the serial port with, or nil to use the current parity. Valid values are: `:none`, `:even`, and `:odd`
+  # @return [SerialPort] An opened serial port
+  # @raise [Errno::ENOENT] If not a valid file
+  # @raise [RubySerial::Error] If not a valid TTY device (only on non-windows platforms), or any other general FFI error
+  # @raise [ArgumentError] If arguments are invalid
+  def self.new(address, baud_rate=9600, data_bits=8, parity=:none, stop_bits=1, enable_blocking=false)
+    super(RubySerial::Configuration.from(
+        device: address,
+        baud: baud_rate,
+        data_bits: data_bits,
+        parity: parity,
+        stop_bits: stop_bits,
+        enable_blocking: enable_blocking,
+        clear_config: true), Serial)
   end
 
+  # @!visibility private
+  # Don't doc IO methods
   def read(*args)
     res = super
     res.nil? ? '' : res
   end
 
+  # @!visibility private
+  # Don't doc IO methods
   def gets(sep=$/, limit=nil)
     if block_given?
       loop do

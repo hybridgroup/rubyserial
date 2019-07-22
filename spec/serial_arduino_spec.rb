@@ -1,3 +1,5 @@
+# Copyright (c) 2019 Patrick Plenefisch
+
 require 'rubyserial'
 require 'timeout'
 
@@ -9,13 +11,17 @@ describe "serialport" do
     else
       @port = "/dev/ttyUSB0"# SerialPort
     end
-
-    @ser = SerialPort.new(@port, 57600, 8, 1, :none)
+    @ser = nil
+    begin
+      @ser = SerialPort.new(@port, 57600, 8, 1, :none)
+    rescue Errno::ENOENT
+      skip "Arduino not connected or port number wrong"
+    end
   end
   NAR = "narwhales are cool"
 
   after do
-   @ser.close
+   @ser.close if @ser
   end
 
 	it "should have the arduino" do

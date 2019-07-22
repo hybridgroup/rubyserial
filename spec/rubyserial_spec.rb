@@ -173,11 +173,6 @@ describe "rubyserial" do
       rate = 600
       @sp = Serial.new(@ports[1], rate)
       fd = @sp.send :fd
-      module RubySerial
-        module Posix
-          attach_function :tcgetattr, [ :int, RubySerial::Posix::Termios ], :int, blocking: true
-        end
-      end
       termios = RubySerial::Posix::Termios.new
       RubySerial::Posix::tcgetattr(fd, termios)
       expect(termios[:c_ispeed]).to eql(RubySerial::Posix::BAUD_RATES[rate])
