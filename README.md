@@ -2,7 +2,7 @@
 
 RubySerial is a simple Ruby gem for reading from and writing to serial ports.
 
-Unlike other Ruby serial port implementations, it supports all of the most popular Ruby implementations (MRI, JRuby, & Rubinius) on the most popular operating systems (OSX, Linux, & Windows). And it does not require any native compilation thanks to using RubyFFI [https://github.com/ffi/ffi](https://github.com/ffi/ffi).
+Unlike other Ruby serial port implementations, it supports all of the most popular Ruby implementations (MRI, JRuby, & Rubinius) on the most popular operating systems (OSX, Linux, & Windows). And it does not require any native compilation thanks to using RubyFFI [https://github.com/ffi/ffi](https://github.com/ffi/ffi). Note: Windows requires JRuby >= 9.2.8.0 to fix native IO issues.
 
 The interface to RubySerial should be compatible with other Ruby serialport gems, so you should be able to drop in the new gem, change the `require` and use it as a replacement. If not, please let us know so we can address any issues.
 
@@ -14,32 +14,55 @@ The interface to RubySerial should be compatible with other Ruby serialport gems
 
     $ gem install rubyserial
 
-## Usage
+## Basic Usage
 
 ```ruby
 require 'rubyserial'
+
+# 0.6 API (nonblocking by default)
 serialport = Serial.new '/dev/ttyACM0' # Defaults to 9600 baud, 8 data bits, and no parity
 serialport = Serial.new '/dev/ttyACM0', 57600
-serialport = Serial.new '/dev/ttyACM0', 19200, 8, :even
+serialport = Serial.new '/dev/ttyACM0', 19200, :even, 8
+serialport = Serial.new '/dev/ttyACM0', 19200, :even, 8, true # to enable blocking IO
+
+# SerialPort gem compatible API (blocking IO by default)
+serialport = SerialPort.new '/dev/ttyACM0' # Defaults to the existing system settings.
+serialport = SerialPort.new '/dev/ttyACM0', 57600
+serialport = SerialPort.new '/dev/ttyACM0', 19200, 8, :even # note the order of args is different
+
+# open style syntax
+SerialPort.open '/dev/ttyACM0', 19200, 8, :even do |serialport|
+	# ...
+end
+
+# change the settings later
+five = SerialPort.open '/dev/ttyACM0' do |serialport|
+	serialport.baud = 9600
+	serialport.data_bits = 8
+	serialport.stop_bits = 1
+	serialport.parity = :none
+	serialport.hupcl = false
+	# ...
+	5
+end
 ```
+Both SerialPort and Serial are an IO object, so standard methods like read and write are available, but do note that Serial has some nonstandard read behavior by default.
 
-## Methods
+## Classes
 
-**write(data : String) -> Int**
+There are 3 levels of API:
 
-Returns the number of bytes written.
-Emits a `RubySerial::Error` on error.
+* High level: {SerialPort} and {Serial}
+* Medium level: {SerialIO}
+* Low level: {RubySerial::Builder.build}
 
-**read(length : Int) -> String**
+Most use cases will do fine with the high level API, as those, particularly {SerialPort}, are standard IO objects. {Serial} is also an IO, but with the {Serial#read} and {Serial#getbyte} methods having non-standard return conditions (`""` if no data exists, otherwise `readpartial` for the former, and nonblocking for the latter). For this reason, new code is suggested to use {SerialPort} as `read`/`readpartial`/`read_nonblocking` work as expected in all other IO objects.
 
-Returns a string up to `length` long. It is not guaranteed to return the entire
-length specified, and will return an empty string if no data is
-available. Emits a `RubySerial::Error` on error.
+The medium level API with {SerialIO} also returns an IO object, but allows you to provide your own SerialIO child class to instantiate instead.
 
-**getbyte -> Fixnum or nil**
+The low level API is not considered stable, and may change in minor releases.
 
-Returns an 8 bit byte or nil if no data is available.
-Emits a `RubySerial::Error` on error.
+See the documentation ! TODO link!!! for more details
 
 **RubySerial::Error**
 
@@ -47,7 +70,7 @@ A wrapper error type that returns the underlying system error code and inherits 
 
 ## Running the tests
 
-The test suite is written using rspec, just use the `rspec` command.
+The test suite is written using rspec, just use the `rspec` command. There are 3 test files: SerialPort API comatibility `serialport_spec`, Serial API compatability `rubyserial_spec`, and the DTR & timeout correctness test suite `serial_arduino_spec`. The latter requires this !TODO! program flashed to an arduino, or a compatible program that the test can talk to. 
 
 ### Test dependencies
 

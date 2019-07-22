@@ -88,6 +88,10 @@ class SerialPort < IO
   #
   # @overload new(device, hash)
   #   @param [Hash<String, Object>] hash The given parameters, but as stringly-keyed values in a hash
+  #   @option hash [Integer] "baud" The baud. Optional
+  #   @option hash [Integer] "data_bits" The number of data bits. Optional
+  #   @option hash [Integer] "stop" The number of stop bits. Optional
+  #   @option hash [Symbol] "parity" The parity. Optional
   def self.new(device, *params)
     raise ArgumentError, "Not Implemented. Please use a full path #{device}" if device.is_a? Integer
     baud, *listargs = *params
@@ -139,6 +143,10 @@ class SerialPort < IO
   #   Creates a new {SerialPort} and returns it.
   #   @return [SerialPort] An opened serial port
   #   @param [Hash<String, Object>] hash The given parameters, but as stringly-keyed values in a hash
+  #   @option hash [Integer] "baud" The baud. Optional
+  #   @option hash [Integer] "data_bits" The number of data bits. Optional
+  #   @option hash [Integer] "stop" The number of stop bits. Optional
+  #   @option hash [Symbol] "parity" The parity. Optional
   # @overload open(device, baud=nil, data_bits=nil, stop_bits=nil, parity=nil)
   #   Creates a new {SerialPort} and pass it to the provided block, closing automatically.
   #   @return [Object] What the block returns
@@ -152,6 +160,10 @@ class SerialPort < IO
   #   @return [Object] What the block returns
   #   @yieldparam io [SerialPort] An opened serial port
   #   @param [Hash<String, Object>] hash The given parameters, but as stringly-keyed values in a hash
+  #   @option hash [Integer] "baud" The baud. Optional
+  #   @option hash [Integer] "data_bits" The number of data bits. Optional
+  #   @option hash [Integer] "stop" The number of stop bits. Optional
+  #   @option hash [Symbol] "parity" The parity. Optional
   def self.open(device, *params)
     arg = SerialPort.new(device, *params)
     return arg unless block_given?
@@ -256,15 +268,20 @@ class Serial < SerialIO
         clear_config: true), Serial)
   end
 
-  # @!visibility private
-  # Don't doc IO methods
+  # Returns a string up to `length` long. It is not guaranteed to return the entire
+  # length specified, and will return an empty string if no data is
+  # available. If enable_blocking=true, it is identical to standard ruby IO#read
+  # except for the fact that empty reads still return empty strings instead of nil
+  # @note nonstandard IO behavior
+  # @return String
   def read(*args)
     res = super
     res.nil? ? '' : res
   end
 
-  # @!visibility private
-  # Don't doc IO methods
+  # Returns an 8 bit byte or nil if no data is available.
+  # @note nonstandard IO signature and behavior
+  # @yieldparam line [String]
   def gets(sep=$/, limit=nil)
     if block_given?
       loop do
