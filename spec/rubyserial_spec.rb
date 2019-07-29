@@ -15,7 +15,7 @@ describe "rubyserial" do
       raise 'socat not found' unless (`socat -h` && $? == 0)
 
       Thread.new do
-        system('socat -lf socat.log -d -d pty,raw,echo=0 pty,raw,echo=0')
+        @pid = spawn('socat -lf socat.log -d -d pty,raw,echo=0 pty,raw,echo=0')
       end
 
       @ptys = nil
@@ -42,28 +42,35 @@ describe "rubyserial" do
   after do
    @sp2.close
    @sp.close
+   Process.kill "KILL", @pid
   end
 
   it "should read and write" do
-    @sp2.write('hello')
-    # small delay so it can write to the other port.
-    sleep 0.1
-    check = @sp.read(5)
-    expect(check).to eql('hello')
+    Timeout::timeout(3) do
+      @sp2.write('hello')
+      # small delay so it can write to the other port.
+      sleep 0.1
+      check = @sp.read(5)
+      expect(check).to eql('hello')
+    end
   end
 
   it "should convert ints to strings" do
-    expect(@sp2.write(123)).to eql(3)
-    sleep 0.1
-    expect(@sp.read(3)).to eql('123')
+    Timeout::timeout(3) do
+      expect(@sp2.write(123)).to eql(3)
+      sleep 0.1
+      expect(@sp.read(3)).to eql('123')
+    end
   end
 
   it "write should return bytes written" do
-    expect(@sp2.write('hello')).to eql(5)
+    Timeout::timeout(3) do
+      expect(@sp2.write('hello')).to eql(5)
+    end
   end
 
   it "reading nothing should be blank" do
-	Timeout::timeout(3) do
+    Timeout::timeout(3) do
       expect(@sp.read(5)).to eql('')
     end
   end

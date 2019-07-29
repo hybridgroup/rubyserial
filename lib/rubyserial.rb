@@ -12,6 +12,8 @@ module RubySerial
   ON_WINDOWS = RbConfig::CONFIG['host_os'] =~ /mswin|windows|mingw/i
   # @!visibility private
   ON_LINUX = RbConfig::CONFIG['host_os'] =~ /linux/i
+  # @!visibility private
+  ON_MAC = RbConfig::CONFIG['host_os'] =~ /darwin|bsd/i
 
   # Error thrown for most RubySerial-specific operations. Originates
   # from ffi errors.
@@ -266,7 +268,7 @@ class Serial < SerialIO
         stop_bits: stop_bits,
         enable_blocking: enable_blocking,
         clear_config: true), Serial).tap do |this|
-      this.instance_variable_set :@blocking, enable_blocking
+      this.instance_variable_set :@nonblock_mac, (RubySerial::ON_MAC && !enable_blocking)
     end
   end
 
@@ -277,7 +279,7 @@ class Serial < SerialIO
   # @note nonstandard IO behavior
   # @return String
   def read(*args)
-    res = @blocking ? super : read_nonblock(*args)
+    res = !@nonblock_mac ? super : read_nonblock(*args)
     res.nil? ? '' : res
   rescue IO::EAGAINWaitReadable
 	''
@@ -285,7 +287,7 @@ class Serial < SerialIO
 
   # Stanard IO#getbyte when enable_blocking=true, nonblocking otherwise
   def getbyte
-    if !@blocking
+    if @nonblock_mac
       begin
         return read_nonblock(1).ord
       rescue IO::EAGAINWaitReadable
