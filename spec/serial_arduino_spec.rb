@@ -229,6 +229,7 @@ describe "serialport" do
 	
 	it "should support changing settings" do
 		Timeout::timeout(12) do
+			sleep 0.1
 			expect(@ser.read(1)).to eq("z")
 			@ser.puts "ye"
 			@ser.hupcl = false

@@ -4,7 +4,8 @@
 
 class RubySerial::Builder
   def self.build(parent, config)
-    fd = IO::sysopen("\\\\.\\#{address}", File::RDWR)
+    dev = config.device.start_with?("\\\\.\\") ? config.device : "\\\\.\\#{config.device}"
+    fd = IO::sysopen(dev, File::RDWR)
 
     hndl = RubySerial::WinC._get_osfhandle(fd)
     # TODO: check errno
@@ -74,7 +75,7 @@ class RubySerial::Builder
     dcb[:flags]  &= ~RubySerial::Win32::DCB::FLAGS_RTS # Always clear the RTS bit
     unless req.hupcl.nil?
       dcb[:flags] &= ~RubySerial::Win32::DCB::DTR_MASK
-      dcb[:flags] |= ~RubySerial::Win32::DCB::DTR_ENABLED if req.hupcl
+      dcb[:flags] |= RubySerial::Win32::DCB::DTR_ENABLED if req.hupcl
     end
 
     actual.baud = dcb[:baudrate]
@@ -89,7 +90,7 @@ end
 
 module RubySerial::Includes
   def reconfigure(hupcl: nil, baud: nil, data_bits: nil, parity: nil, stop_bits: nil)
-    RubySerial::Builder.reconfigure(self, @_rs_win32_hndl, RubySerial::Configuration.from(hupcl: hupcl, baud: baud, data_bits: data_bits, parity: parity, stop_bits: stop_bits))
+    RubySerial::Builder.reconfigure(@_rs_win32_hndl, RubySerial::Configuration.from(hupcl: hupcl, baud: baud, data_bits: data_bits, parity: parity, stop_bits: stop_bits))
   end
 
   # Ruby IO has issues with nonblocking from_fd on windows, so override just to change the underlying timeouts
@@ -135,11 +136,11 @@ module RubySerial::Includes
   ##
   # Updates the timeouts (if applicable) to emulate the requested read type
   def change_win32_mode type
-    return if @_win32_curr_read_mode == type
+    return if @_rs_win32_curr_read_mode == type
 
     # have to change the mode now
     RubySerial::Builder.win32_update_readmode(type, @_rs_win32_hndl)
-    @_win32_curr_read_mode = type
+    @_rs_win32_curr_read_mode = type
   end
 
   def _rs_win32_init(hndl, blocking_mode)
