@@ -5,6 +5,9 @@
 module RubySerial
   # @api private
   # @!visibility private
+  ENOTTY_MAP="ENOTTY"
+  # @api private
+  # @!visibility private
   module WinC
     extend FFI::Library
     ffi_lib 'msvcrt'

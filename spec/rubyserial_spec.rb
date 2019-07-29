@@ -1,4 +1,5 @@
 require 'rubyserial'
+require 'timeout'
 
 describe "rubyserial" do
   before do
@@ -62,71 +63,91 @@ describe "rubyserial" do
   end
 
   it "reading nothing should be blank" do
-    expect(@sp.read(5)).to eql('')
+	Timeout::timeout(3) do
+      expect(@sp.read(5)).to eql('')
+    end
   end
 
   it "should give me nil on getbyte" do
-    expect(@sp.getbyte).to be_nil
+    Timeout::timeout(3) do
+      expect(@sp.getbyte).to be_nil
+    end
   end
 
   it 'should give me a zero byte from getbyte' do
-    @sp2.write("\x00")
-    sleep 0.1
-    expect(@sp.getbyte).to eql(0)
+	Timeout::timeout(3) do
+      @sp2.write("\x00")
+      sleep 0.1
+      expect(@sp.getbyte).to eql(0)
+    end
   end
 
   it "should give me bytes" do
-    @sp2.write('hello')
-    # small delay so it can write to the other port.
-    sleep 0.1
-    check = @sp.getbyte
-    expect([check].pack('C')).to eql('h')
+	Timeout::timeout(3) do
+      @sp2.write('hello')
+      # small delay so it can write to the other port.
+      sleep 0.1
+      check = @sp.getbyte
+      expect([check].pack('C')).to eql('h')
+    end
   end
 
   describe "giving me lines" do
     it "should give me a line" do
-      @sp.write("no yes \n hello")
-      sleep 0.1
-      expect(@sp2.gets).to eql("no yes \n")
+      Timeout::timeout(3) do
+        @sp.write("no yes \n hello")
+        sleep 0.1
+        expect(@sp2.gets).to eql("no yes \n")
+      end
     end
 
     it "should give me a line with block" do
-      @sp.write("no yes \n hello")
-      sleep 0.1
-      result = ""
-      @sp2.gets do |line|
-        result = line
-        break if !result.empty?
+      Timeout::timeout(3) do
+        @sp.write("no yes \n hello")
+        sleep 0.1
+        result = ""
+        @sp2.gets do |line|
+          result = line
+          break if !result.empty?
+        end
+        expect(result).to eql("no yes \n")
       end
-      expect(result).to eql("no yes \n")
     end
 
     it "should accept a sep param" do
-      @sp.write('no yes END bleh')
-      sleep 0.1
-      expect(@sp2.gets('END')).to eql("no yes END")
+      Timeout::timeout(3) do
+        @sp.write('no yes END bleh')
+        sleep 0.1
+        expect(@sp2.gets('END')).to eql("no yes END")
+      end
     end
 
     it "should accept a limit param" do
-      @sp.write("no yes \n hello")
-      sleep 0.1
-      expect(@sp2.gets(4)).to eql("no y")
+	  Timeout::timeout(3) do
+        @sp.write("no yes \n hello")
+        sleep 0.1
+        expect(@sp2.gets(4)).to eql("no y")
+      end
     end
 
     it "should accept limit and sep params" do
-      @sp.write("no yes END hello")
-      sleep 0.1
-      expect(@sp2.gets('END', 20)).to eql("no yes END")
-      @sp2.read(1000)
-      @sp.write("no yes END hello")
-      sleep 0.1
-      expect(@sp2.gets('END', 4)).to eql('no y')
+	  Timeout::timeout(3) do
+        @sp.write("no yes END hello")
+        sleep 0.1
+        expect(@sp2.gets('END', 20)).to eql("no yes END")
+        @sp2.read(1000)
+        @sp.write("no yes END hello")
+        sleep 0.1
+        expect(@sp2.gets('END', 4)).to eql('no y')
+      end
     end
 
     it "should read a paragraph at a time" do
-      @sp.write("Something \n Something else \n\n and other stuff")
-      sleep 0.1
-      expect(@sp2.gets('')).to eql("Something \n Something else \n\n")
+	  Timeout::timeout(3) do
+        @sp.write("Something \n Something else \n\n and other stuff")
+        sleep 0.1
+        expect(@sp2.gets('')).to eql("Something \n Something else \n\n")
+      end
     end
   end
 

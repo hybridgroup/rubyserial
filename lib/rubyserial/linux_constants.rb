@@ -4,6 +4,9 @@
 module RubySerial
   # @api private
   # @!visibility private
+  ENOTTY_MAP="ENOTTY"
+  # @api private
+  # @!visibility private
   module Posix
     extend FFI::Library
     ffi_lib FFI::Library::LIBC
@@ -32,6 +35,7 @@ module RubySerial
     CSIZE = 0000060
     CBAUD = 0010017
     HUPCL = 0002000
+    HUPCL_HACK=false
 
     DATA_BITS = {
       5 => 0000000,
@@ -84,6 +88,7 @@ module RubySerial
       1 => 0x00000000,
       2 => CSTOPB
     }
+
 
     ERROR_CODES = {
       1 => "EPERM",

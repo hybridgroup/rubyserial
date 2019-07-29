@@ -26,12 +26,12 @@ class RubySerial::Builder
       ffi_call(:fcntl, fd, RubySerial::Posix::F_SETFL, :int, ~RubySerial::Posix::O_NONBLOCK & fl)
     end
 
-    # Update the terminal settings
-    out_config = reconfigure(fd, config)
-    out_config.device = config.device
-
     file = parent.send(:for_fd, fd, File::RDWR | File::SYNC)
-    file.send :_rs_posix_init, fd
+    file.send :_rs_posix_init, fd, config.device
+
+    # Update the terminal settings
+    out_config = reconfigure(file, fd, config)
+    out_config.device = config.device
 
     return [file, fd, out_config]
   end
@@ -39,11 +39,11 @@ class RubySerial::Builder
   # @api private
   # @!visibility private
   # Reconfigures the given (platform-specific) file handle with the provided configuration. See {RubySerial::Includes#reconfigure} for public API
-  def self.reconfigure(fd, req_config)
+  def self.reconfigure(file, fd, req_config)
     # Update the terminal settings
     config = RubySerial::Posix::Termios.new
     ffi_call(:tcgetattr, fd, config)
-    out_config = edit_config(config, req_config, min: {nil => nil, true => 1, false => 0}[req_config.enable_blocking])
+    out_config = edit_config(file, fd, config, req_config, min: {nil => nil, true => 1, false => 0}[req_config.enable_blocking])
     ffi_call(:tcsetattr, fd, RubySerial::Posix::TCSANOW, config)
     out_config
   end
@@ -83,8 +83,8 @@ class RubySerial::Builder
   end
 
   # Updates the configuration object with the requested configuration
-  def self.edit_config(config, req, min: nil)
-    actual = RubySerial::Configuration.from(clear_config: req.clear_config)
+  def self.edit_config(fio, fd, config, req, min: nil)
+    actual = RubySerial::Configuration.from(clear_config: req.clear_config, device: req.device)
 
     if req.clear_config
       # reset everything except for flow settings
@@ -110,6 +110,20 @@ class RubySerial::Builder
     actual.data_bits = set config, :c_cflag, RubySerial::Posix::CSIZE, req.data_bits, RubySerial::Posix::DATA_BITS
     actual.parity = set config, :c_cflag, RubySerial::Posix::PARITY_FIELD, req.parity, RubySerial::Posix::PARITY
     actual.stop_bits = set config, :c_cflag, RubySerial::Posix::CSTOPB, req.stop_bits, RubySerial::Posix::STOPBITS
+
+    # Some systems (osx) don't keep settings between reconnects, thus negating the usefulness of hupcl.
+    # On those systems, we add an open pipe when you set it, and close it when turned off again
+    hupcl_hack = RubySerial::Posix::HUPCL_HACK
+    if hupcl_hack && req.hupcl != nil
+      @hupcl_map ||= {}
+      devname = req.device
+      if !req.hupcl
+        @hupcl_map[devname] = fio.dup if @hupcl_map[devname].nil?
+      elsif @hupcl_map[devname] != nil
+        @hupcl_map[devname].close
+        @hupcl_map[devname] = nil
+      end
+    end
     actual.hupcl = set config, :c_cflag, RubySerial::Posix::HUPCL, req.hupcl
 
     return actual
@@ -121,12 +135,13 @@ module RubySerial::Includes
   # Reconfigures the serial port with the given new values, if provided. Pass nil to keep the current settings.
   # @return [RubySerial::Configuration) The currently configured values for this serial port.
   def reconfigure(hupcl: nil, baud: nil, data_bits: nil, parity: nil, stop_bits: nil)
-    RubySerial::Builder.reconfigure(@_rs_posix_fd, RubySerial::Configuration.from(hupcl: hupcl, baud: baud, data_bits: data_bits, parity: parity, stop_bits: stop_bits))
+    RubySerial::Builder.reconfigure(self, @_rs_posix_fd, RubySerial::Configuration.from(device: @_rs_posix_devname, hupcl: hupcl, baud: baud, data_bits: data_bits, parity: parity, stop_bits: stop_bits))
   end
 
   # TODO: dts set on linux?
   private
-  def _rs_posix_init(fd)
+  def _rs_posix_init(fd, name)
     @_rs_posix_fd = fd
+    @_rs_posix_devname = name
   end
 end

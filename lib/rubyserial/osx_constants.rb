@@ -5,6 +5,9 @@
 module RubySerial
   # @api private
   # @!visibility private
+  ENOTTY_MAP="ENODEV"
+  # @api private
+  # @!visibility private
   module Posix
   extend FFI::Library
     ffi_lib FFI::Library::LIBC
@@ -33,6 +36,7 @@ module RubySerial
     CRTSCTS = CCTS_OFLOW | CRTS_IFLOW
     CSIZE = 0x00000300
     HUPCL = 0x00004000
+    HUPCL_HACK=true
 
     DATA_BITS = {
       5 => 0x00000000,

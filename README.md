@@ -19,19 +19,22 @@ The interface to RubySerial should be compatible with other Ruby serialport gems
 ```ruby
 require 'rubyserial'
 
-# 0.6 API (nonblocking by default)
+# 0.6 API (nonblocking IO by default)
 serialport = Serial.new '/dev/ttyACM0' # Defaults to 9600 baud, 8 data bits, and no parity
 serialport = Serial.new '/dev/ttyACM0', 57600
 serialport = Serial.new '/dev/ttyACM0', 19200, :even, 8
 serialport = Serial.new '/dev/ttyACM0', 19200, :even, 8, true # to enable blocking IO
 
-# SerialPort gem compatible API (blocking IO by default)
+# SerialPort gem compatible API (blocking & nonblocking IO)
 serialport = SerialPort.new '/dev/ttyACM0' # Defaults to the existing system settings.
 serialport = SerialPort.new '/dev/ttyACM0', 57600
 serialport = SerialPort.new '/dev/ttyACM0', 19200, 8, :even # note the order of args is different
 
 # open style syntax
 SerialPort.open '/dev/ttyACM0', 19200, 8, :even do |serialport|
+	serialport.read(3) # blocking
+	serialport.read_nonblock(3) # nonblocking
+	serialport.readpartial(3) # nonblocking after blocking for first character
 	# ...
 end
 
@@ -46,7 +49,7 @@ five = SerialPort.open '/dev/ttyACM0' do |serialport|
 	5
 end
 ```
-Both SerialPort and Serial are an IO object, so standard methods like read and write are available, but do note that Serial has some nonstandard read behavior by default.
+Both SerialPort and Serial are an IO object, so standard methods like read and write are available, but do note that Serial has some nonstandard read behavior by default. See the documentation for details
 
 ## Classes
 

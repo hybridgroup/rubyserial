@@ -106,7 +106,7 @@ class SerialPort < IO
       serial.instance_variable_set :@config, config
       serial
     rescue RubySerial::Error => e
-      if e.message == "ENOTTY"
+      if e.message == RubySerial::ENOTTY_MAP
         raise ArgumentError, "not a serial port"
       else
         raise
@@ -265,7 +265,9 @@ class Serial < SerialIO
         parity: parity,
         stop_bits: stop_bits,
         enable_blocking: enable_blocking,
-        clear_config: true), Serial)
+        clear_config: true), Serial).tap do |this|
+      this.instance_variable_set :@blocking, enable_blocking
+    end
   end
 
   # Returns a string up to `length` long. It is not guaranteed to return the entire
@@ -275,8 +277,23 @@ class Serial < SerialIO
   # @note nonstandard IO behavior
   # @return String
   def read(*args)
-    res = super
+    res = @blocking ? super : read_nonblock(*args)
     res.nil? ? '' : res
+  rescue IO::EAGAINWaitReadable
+	''
+  end
+
+  # Stanard IO#getbyte when enable_blocking=true, nonblocking otherwise
+  def getbyte
+    if !@blocking
+      begin
+        return read_nonblock(1).ord
+      rescue IO::EAGAINWaitReadable
+        nil
+      end
+    else
+      super
+    end
   end
 
   # Returns an 8 bit byte or nil if no data is available.

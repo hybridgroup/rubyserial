@@ -9,6 +9,7 @@ describe "serialport" do
     if RubySerial::ON_WINDOWS
       @port = "COM3"
     else
+      # cu.usbserial-???? on a mac (varies)
       @port = "/dev/ttyUSB0"# SerialPort
     end
     @ser = nil
@@ -88,7 +89,7 @@ describe "serialport" do
 			@ser.close # stil resets
 			@ser = SerialPort.new(@port, 57600, 8, 1, :none) # reopen with hupcl set
 			
-			sleep 0.25
+			sleep 0.75 # time for the arduino to reset
 			@ser.readpartial(1024) # remove the z
 			
 			@ser.close # should NOT reset

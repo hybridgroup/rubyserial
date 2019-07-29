@@ -64,7 +64,7 @@ class RubySerial::Builder
 
   # Updates the configuration object with the requested configuration
   def self.edit_config(dcb, req)
-    actual = RubySerial::Configuration.new
+    actual = RubySerial::Configuration.from(device: req.device)
 
     dcb[:baudrate] = req.baud if req.baud
     dcb[:bytesize] = req.data_bits if req.data_bits

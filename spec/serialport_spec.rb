@@ -10,6 +10,7 @@ describe "serialport api" do
       @port = "COM1" #TODO...
       @not_a_port = nil
     else
+      # Use ttys0 on a mac
       @port = "/dev/ttyS0"# SerialPort
       @not_a_port = "/dev/null"
       @not_a_file = "/dev/not_a_file"
@@ -44,7 +45,7 @@ describe "serialport api" do
 		expect {
 			s = Serial.new(@not_a_port)
 			s.close
-		}.to raise_error(RubySerial::Error, "ENOTTY")
+		}.to raise_error(RubySerial::Error, /^ENO/)
 		
 		expect {
 			s = Serial.new(@not_a_file)
@@ -79,8 +80,6 @@ describe "serialport api" do
 	
 	it "should support open named args" do
 		SerialPort.open(@port, "baud" => 57600,  "data_bits" => 6, "stop_bits" => 1, "parity" => :even) do |s|
-			p s
-			p s.to_s
 			expect(s.baud).to eq 57600
 			expect(s.data_bits).to eq 6
 			expect(s.stop_bits).to eq 1
