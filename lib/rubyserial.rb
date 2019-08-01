@@ -268,7 +268,7 @@ class Serial < SerialIO
         stop_bits: stop_bits,
         enable_blocking: enable_blocking,
         clear_config: true), Serial).tap do |this|
-      this.instance_variable_set :@nonblock_mac, (RubySerial::ON_MAC && !enable_blocking)
+      this.instance_variable_set :@nonblock_mac, (!RubySerial::ON_LINUX && !enable_blocking)
     end
   end
 

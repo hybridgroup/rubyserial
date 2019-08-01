@@ -9,6 +9,7 @@ describe "rubyserial" do
       # https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
       @ports[0] = "\\\\.\\CNCA0"
       @ports[1] = "\\\\.\\CNCB0"
+      @pid = nil
     else
       File.delete('socat.log') if File.file?('socat.log')
 
@@ -42,7 +43,7 @@ describe "rubyserial" do
   after do
    @sp2.close
    @sp.close
-   Process.kill "KILL", @pid
+   Process.kill "KILL", @pid unless @pid.nil?
   end
 
   it "should read and write" do
@@ -98,7 +99,6 @@ describe "rubyserial" do
       expect([check].pack('C')).to eql('h')
     end
   end
-
   describe "giving me lines" do
     it "should give me a line" do
       Timeout::timeout(3) do
