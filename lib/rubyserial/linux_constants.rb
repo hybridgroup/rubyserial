@@ -1,8 +1,14 @@
 # Copyright (c) 2014-2016 The Hybrid Group
+# Copyright (c) 2019 Patrick Plenefisch
 
 module RubySerial
+  # @api private
+  # @!visibility private
+  ENOTTY_MAP="ENOTTY"
+  # @api private
+  # @!visibility private
   module Posix
-  extend FFI::Library
+    extend FFI::Library
     ffi_lib FFI::Library::LIBC
 
     O_NONBLOCK = 00004000
@@ -16,11 +22,20 @@ module RubySerial
     IGNPAR = 0000004
     PARENB = 0000400
     PARODD = 0001000
+    PARITY_FIELD = PARENB | PARODD
     CSTOPB = 0000100
     CREAD  = 0000200
     CLOCAL = 0004000
     VMIN = 6
     NCCS = 32
+    IXON = 0002000
+    IXANY = 0004000
+    IXOFF = 0010000
+    CRTSCTS = 020000000000
+    CSIZE = 0000060
+    CBAUD = 0010017
+    HUPCL = 0002000
+    HUPCL_HACK=false
 
     DATA_BITS = {
       5 => 0000000,
@@ -29,7 +44,7 @@ module RubySerial
       8 => 0000060
     }
 
-    BAUDE_RATES = {
+    BAUD_RATES = {
       0 => 0000000,
       50 => 0000001,
       75 => 0000002,
@@ -73,6 +88,7 @@ module RubySerial
       1 => 0x00000000,
       2 => CSTOPB
     }
+
 
     ERROR_CODES = {
       1 => "EPERM",
@@ -217,12 +233,8 @@ module RubySerial
               :c_ospeed, :uint
     end
 
-    attach_function :ioctl, [ :int, :ulong, RubySerial::Posix::Termios], :int, blocking: true
     attach_function :tcsetattr, [ :int, :int, RubySerial::Posix::Termios ], :int, blocking: true
+    attach_function :tcgetattr, [ :int, RubySerial::Posix::Termios ], :int, blocking: true
     attach_function :fcntl, [:int, :int, :varargs], :int, blocking: true
-    attach_function :open, [:pointer, :int], :int, blocking: true
-    attach_function :close, [:int], :int, blocking: true
-    attach_function :write, [:int, :pointer,  :int],:int, blocking: true
-    attach_function :read, [:int, :pointer,  :int],:int, blocking: true
   end
 end

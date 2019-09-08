@@ -1,132 +1,147 @@
 # Copyright (c) 2014-2016 The Hybrid Group
+# Copyright (c) 2019 Patrick Plenefisch
 
-class Serial
-  def initialize(address, baude_rate=9600, data_bits=8, parity=:none, stop_bits=1)
-    file_opts = RubySerial::Posix::O_RDWR | RubySerial::Posix::O_NOCTTY | RubySerial::Posix::O_NONBLOCK
-    @fd = RubySerial::Posix.open(address, file_opts)
 
-    if @fd == -1
-      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    else
-      @open = true
+##
+# Low-level API. May change between minor releases. For stability, see {Serial} or {SerialPort}.
+class RubySerial::Builder
+  ##
+  # Creates an instance of the given parent class to be a serial port with the given configuration
+  #
+  # @example
+  #   RubySerial::Builder.build(SerialIO, RubySerial::Configuration.from(device: "/dev/ttyS0"))
+  #     #=> [#<SerialIO:/dev/ttyS0>, 3, #<struct RubySerial::Configuration device="/dev/ttyS0", baud=9600, data_bits=8, parity=:none, stop_bits=1, hupcl=false, enable_blocking=nil, clear_config=nil>]
+  #
+  # @param [Class] parent A class that is_a? IO and has included the {RubySerial::Includes} module
+  # @param [RubySerial::Configuration] config The details of the serial port to open
+  # @return [parent, Integer, RubySerial::Configuration] A new instance of parent, the file descriptor, and the current configuration of the serial port
+  # @raise [Errno::ENOENT] If not a valid file
+  # @raise [RubySerial::Error] If not a TTY device (only on non-windows platforms), or any other general error
+  def self.build(parent, config)
+    fd = IO::sysopen(config.device, File::RDWR | File::NOCTTY | File::NONBLOCK)
+
+    # enable blocking mode. I'm not sure why we do it this way, with disable and then re-enable. History suggests that it might be a mac thing
+    if config.enable_blocking
+      fl = ffi_call(:fcntl, fd, RubySerial::Posix::F_GETFL, :int, 0)
+      ffi_call(:fcntl, fd, RubySerial::Posix::F_SETFL, :int, ~RubySerial::Posix::O_NONBLOCK & fl)
     end
 
-    fl = RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_GETFL, :int, 0)
-    if fl == -1
-      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
+    file = parent.send(:for_fd, fd, File::RDWR | File::SYNC)
+    file.send :_rs_posix_init, fd, config.device
 
-    err = RubySerial::Posix.fcntl(@fd, RubySerial::Posix::F_SETFL, :int, ~RubySerial::Posix::O_NONBLOCK & fl)
-    if err == -1
-      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
+    # Update the terminal settings
+    out_config = reconfigure(file, fd, config)
+    out_config.device = config.device
 
-    @config = build_config(baude_rate, data_bits, parity, stop_bits)
-
-    err = RubySerial::Posix.tcsetattr(@fd, RubySerial::Posix::TCSANOW, @config)
-    if err == -1
-      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
+    return [file, fd, out_config]
   end
 
-  def closed?
-    !@open
-  end
-
-  def close
-    err = RubySerial::Posix.close(@fd)
-    if err == -1
-      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    else
-      @open = false
-    end
-  end
-
-  def write(data)
-    data = data.to_s
-    n =  0
-    while data.size > n do
-      buff = FFI::MemoryPointer.from_string(data[n..-1].to_s)
-      i = RubySerial::Posix.write(@fd, buff, buff.size-1)
-      if i == -1
-        raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-      else
-        n = n+i
-      end
-    end
-
-    # return number of bytes written
-    n
-  end
-
-  def read(size)
-    buff = FFI::MemoryPointer.new :char, size
-    i = RubySerial::Posix.read(@fd, buff, size)
-    if i == -1
-      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
-    buff.get_bytes(0, i)
-  end
-
-  def getbyte
-    buff = FFI::MemoryPointer.new :char, 1
-    i = RubySerial::Posix.read(@fd, buff, 1)
-    if i == -1
-      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
-    end
-
-    if i == 0
-      nil
-    else
-      buff.get_bytes(0,1).bytes.first
-    end
-  end
-
-  def gets(sep=$/, limit=nil)
-    if block_given?
-      loop do
-        yield(get_until_sep(sep, limit))
-      end
-    else
-      get_until_sep(sep, limit)
-    end
+  # @api private
+  # @!visibility private
+  # Reconfigures the given (platform-specific) file handle with the provided configuration. See {RubySerial::Includes#reconfigure} for public API
+  def self.reconfigure(file, fd, req_config)
+    # Update the terminal settings
+    config = RubySerial::Posix::Termios.new
+    ffi_call(:tcgetattr, fd, config)
+    out_config = edit_config(file, fd, config, req_config, min: {nil => nil, true => 1, false => 0}[req_config.enable_blocking])
+    ffi_call(:tcsetattr, fd, RubySerial::Posix::TCSANOW, config)
+    out_config
   end
 
   private
 
-  def get_until_sep(sep, limit)
-    sep = "\n\n" if sep == ''
-    # This allows the method signature to be (sep) or (limit)
-    (limit = sep; sep="\n") if sep.is_a? Integer
-    bytes = []
-    loop do
-      current_byte = getbyte
-      bytes << current_byte unless current_byte.nil?
-      break if (bytes.last(sep.bytes.to_a.size) == sep.bytes.to_a) || ((bytes.size == limit) if limit)
+  # Calls the given FFI target, and raises an error if it fails
+  def self.ffi_call target, *args
+    res = RubySerial::Posix.send(target, *args)
+    if res == -1
+      raise RubySerial::Error, RubySerial::Posix::ERROR_CODES[FFI.errno]
     end
-
-    bytes.map { |e| e.chr }.join
+    res
   end
 
-  def build_config(baude_rate, data_bits, parity, stop_bits)
-    config = RubySerial::Posix::Termios.new
+  # Sets the given config value (if provided), and returns the current value
+  def self.set config, field, flag, value, map = nil
+    return get((config[field] & flag), map) if value.nil?
+    trueval = if map.nil?
+      if !!value == value # boolean values set to the flag
+        value ? flag : 0
+      else
+        value
+      end
+    else
+      map[value]
+    end
+    raise RubySerial::Error, "Values out of range: #{value}" unless trueval.is_a? Integer
+    # mask the whole field, and set new value
+    config[field] = (config[field] & ~flag) | trueval
+    value
+  end
 
-    config[:c_iflag]  = RubySerial::Posix::IGNPAR
-    config[:c_ispeed] = RubySerial::Posix::BAUDE_RATES[baude_rate]
-    config[:c_ospeed] = RubySerial::Posix::BAUDE_RATES[baude_rate]
-    config[:c_cflag]  = RubySerial::Posix::DATA_BITS[data_bits] |
-      RubySerial::Posix::CREAD |
-      RubySerial::Posix::CLOCAL |
-      RubySerial::Posix::PARITY[parity] |
-      RubySerial::Posix::STOPBITS[stop_bits]
+  def self.get value, options
+    return value != 0 if options.nil?
+    options.key(value)
+  end
 
-    # Masking in baud rate on OS X would corrupt the settings.
-    if RubySerial::ON_LINUX
-      config[:c_cflag] = config[:c_cflag] | RubySerial::Posix::BAUDE_RATES[baude_rate]
+  # Updates the configuration object with the requested configuration
+  def self.edit_config(fio, fd, config, req, min: nil)
+    actual = RubySerial::Configuration.from(clear_config: req.clear_config, device: req.device)
+
+    if req.clear_config
+      # reset everything except for flow settings
+      config[:c_iflag] &= (RubySerial::Posix::IXON | RubySerial::Posix::IXOFF | RubySerial::Posix::IXANY | RubySerial::Posix::CRTSCTS)
+      config[:c_iflag] |= RubySerial::Posix::IGNPAR
+      config[:c_oflag] = 0
+      config[:c_cflag] = RubySerial::Posix::CREAD | RubySerial::Posix::CLOCAL
+      config[:c_lflag] = 0
     end
 
-    config[:cc_c][RubySerial::Posix::VMIN] = 0
+    config[:cc_c][RubySerial::Posix::VMIN] = min unless min.nil?
 
-    config
+    unless req.baud.nil?
+      # Masking in baud rate on OS X would corrupt the settings.
+      if RubySerial::ON_LINUX
+        set config, :c_cflag, RubySerial::Posix::CBAUD, req.baud, RubySerial::Posix::BAUD_RATES
+      end
+
+      config[:c_ospeed] = config[:c_ispeed] = RubySerial::Posix::BAUD_RATES[req.baud]
+    end
+    actual.baud = get config[:c_ispeed], RubySerial::Posix::BAUD_RATES
+
+    actual.data_bits = set config, :c_cflag, RubySerial::Posix::CSIZE, req.data_bits, RubySerial::Posix::DATA_BITS
+    actual.parity = set config, :c_cflag, RubySerial::Posix::PARITY_FIELD, req.parity, RubySerial::Posix::PARITY
+    actual.stop_bits = set config, :c_cflag, RubySerial::Posix::CSTOPB, req.stop_bits, RubySerial::Posix::STOPBITS
+
+    # Some systems (osx) don't keep settings between reconnects, thus negating the usefulness of hupcl.
+    # On those systems, we add an open pipe when you set it, and close it when turned off again
+    hupcl_hack = RubySerial::Posix::HUPCL_HACK
+    if hupcl_hack && req.hupcl != nil
+      @hupcl_map ||= {}
+      devname = req.device
+      if !req.hupcl
+        @hupcl_map[devname] = fio.dup if @hupcl_map[devname].nil?
+      elsif @hupcl_map[devname] != nil
+        @hupcl_map[devname].close
+        @hupcl_map[devname] = nil
+      end
+    end
+    actual.hupcl = set config, :c_cflag, RubySerial::Posix::HUPCL, req.hupcl
+
+    return actual
+  end
+end
+
+# The module that must be included in the parent class (such as {SerialIO}, {Serial}, or {SerialPort}) for {RubySerial::Builder} to work correctly. These methods are thus on all RubySerial objects.
+module RubySerial::Includes
+  # Reconfigures the serial port with the given new values, if provided. Pass nil to keep the current settings.
+  # @return [RubySerial::Configuration) The currently configured values for this serial port.
+  def reconfigure(hupcl: nil, baud: nil, data_bits: nil, parity: nil, stop_bits: nil)
+    RubySerial::Builder.reconfigure(self, @_rs_posix_fd, RubySerial::Configuration.from(device: @_rs_posix_devname, hupcl: hupcl, baud: baud, data_bits: data_bits, parity: parity, stop_bits: stop_bits))
+  end
+
+  # TODO: dts set on linux?
+  private
+  def _rs_posix_init(fd, name)
+    @_rs_posix_fd = fd
+    @_rs_posix_devname = name
   end
 end

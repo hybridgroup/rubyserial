@@ -1,4 +1,5 @@
 require 'rubyserial'
+require 'timeout'
 
 describe "rubyserial" do
   before do
@@ -8,13 +9,14 @@ describe "rubyserial" do
       # https://github.com/hybridgroup/rubyserial/raw/appveyor_deps/setup_com0com_W7_x64_signed.exe
       @ports[0] = "\\\\.\\CNCA0"
       @ports[1] = "\\\\.\\CNCB0"
+      @pid = nil
     else
       File.delete('socat.log') if File.file?('socat.log')
 
       raise 'socat not found' unless (`socat -h` && $? == 0)
 
       Thread.new do
-        system('socat -lf socat.log -d -d pty,raw,echo=0 pty,raw,echo=0')
+        @pid = spawn('socat -lf socat.log -d -d pty,raw,echo=0 pty,raw,echo=0')
       end
 
       @ptys = nil
@@ -41,92 +43,118 @@ describe "rubyserial" do
   after do
    @sp2.close
    @sp.close
+   Process.kill "KILL", @pid unless @pid.nil?
   end
 
   it "should read and write" do
-    @sp2.write('hello')
-    # small delay so it can write to the other port.
-    sleep 0.1
-    check = @sp.read(5)
-    expect(check).to eql('hello')
+    Timeout::timeout(3) do
+      @sp2.write('hello')
+      # small delay so it can write to the other port.
+      sleep 0.1
+      check = @sp.read(5)
+      expect(check).to eql('hello')
+    end
   end
 
   it "should convert ints to strings" do
-    expect(@sp2.write(123)).to eql(3)
-    sleep 0.1
-    expect(@sp.read(3)).to eql('123')
+    Timeout::timeout(3) do
+      expect(@sp2.write(123)).to eql(3)
+      sleep 0.1
+      expect(@sp.read(3)).to eql('123')
+    end
   end
 
   it "write should return bytes written" do
-    expect(@sp2.write('hello')).to eql(5)
+    Timeout::timeout(3) do
+      expect(@sp2.write('hello')).to eql(5)
+    end
   end
 
   it "reading nothing should be blank" do
-    expect(@sp.read(5)).to eql('')
+    Timeout::timeout(3) do
+      expect(@sp.read(5)).to eql('')
+    end
   end
 
   it "should give me nil on getbyte" do
-    expect(@sp.getbyte).to be_nil
+    Timeout::timeout(3) do
+      expect(@sp.getbyte).to be_nil
+    end
   end
 
   it 'should give me a zero byte from getbyte' do
-    @sp2.write("\x00")
-    sleep 0.1
-    expect(@sp.getbyte).to eql(0)
+	Timeout::timeout(3) do
+      @sp2.write("\x00")
+      sleep 0.1
+      expect(@sp.getbyte).to eql(0)
+    end
   end
 
   it "should give me bytes" do
-    @sp2.write('hello')
-    # small delay so it can write to the other port.
-    sleep 0.1
-    check = @sp.getbyte
-    expect([check].pack('C')).to eql('h')
+	Timeout::timeout(3) do
+      @sp2.write('hello')
+      # small delay so it can write to the other port.
+      sleep 0.1
+      check = @sp.getbyte
+      expect([check].pack('C')).to eql('h')
+    end
   end
-
   describe "giving me lines" do
     it "should give me a line" do
-      @sp.write("no yes \n hello")
-      sleep 0.1
-      expect(@sp2.gets).to eql("no yes \n")
+      Timeout::timeout(3) do
+        @sp.write("no yes \n hello")
+        sleep 0.1
+        expect(@sp2.gets).to eql("no yes \n")
+      end
     end
 
     it "should give me a line with block" do
-      @sp.write("no yes \n hello")
-      sleep 0.1
-      result = ""
-      @sp2.gets do |line|
-        result = line
-        break if !result.empty?
+      Timeout::timeout(3) do
+        @sp.write("no yes \n hello")
+        sleep 0.1
+        result = ""
+        @sp2.gets do |line|
+          result = line
+          break if !result.empty?
+        end
+        expect(result).to eql("no yes \n")
       end
-      expect(result).to eql("no yes \n")
     end
 
     it "should accept a sep param" do
-      @sp.write('no yes END bleh')
-      sleep 0.1
-      expect(@sp2.gets('END')).to eql("no yes END")
+      Timeout::timeout(3) do
+        @sp.write('no yes END bleh')
+        sleep 0.1
+        expect(@sp2.gets('END')).to eql("no yes END")
+      end
     end
 
     it "should accept a limit param" do
-      @sp.write("no yes \n hello")
-      sleep 0.1
-      expect(@sp2.gets(4)).to eql("no y")
+	  Timeout::timeout(3) do
+        @sp.write("no yes \n hello")
+        sleep 0.1
+        expect(@sp2.gets(4)).to eql("no y")
+      end
     end
 
     it "should accept limit and sep params" do
-      @sp.write("no yes END hello")
-      sleep 0.1
-      expect(@sp2.gets('END', 20)).to eql("no yes END")
-      @sp2.read(1000)
-      @sp.write("no yes END hello")
-      sleep 0.1
-      expect(@sp2.gets('END', 4)).to eql('no y')
+	  Timeout::timeout(3) do
+        @sp.write("no yes END hello")
+        sleep 0.1
+        expect(@sp2.gets('END', 20)).to eql("no yes END")
+        @sp2.read(1000)
+        @sp.write("no yes END hello")
+        sleep 0.1
+        expect(@sp2.gets('END', 4)).to eql('no y')
+      end
     end
 
     it "should read a paragraph at a time" do
-      @sp.write("Something \n Something else \n\n and other stuff")
-      sleep 0.1
-      expect(@sp2.gets('')).to eql("Something \n Something else \n\n")
+	  Timeout::timeout(3) do
+        @sp.write("Something \n Something else \n\n and other stuff")
+        sleep 0.1
+        expect(@sp2.gets('')).to eql("Something \n Something else \n\n")
+      end
     end
   end
 
@@ -172,15 +200,10 @@ describe "rubyserial" do
       @sp.close
       rate = 600
       @sp = Serial.new(@ports[1], rate)
-      fd = @sp.instance_variable_get(:@fd)
-      module RubySerial
-        module Posix
-          attach_function :tcgetattr, [ :int, RubySerial::Posix::Termios ], :int, blocking: true
-        end
-      end
+      fd = @sp.send :fd
       termios = RubySerial::Posix::Termios.new
       RubySerial::Posix::tcgetattr(fd, termios)
-      expect(termios[:c_ispeed]).to eql(RubySerial::Posix::BAUDE_RATES[rate])
+      expect(termios[:c_ispeed]).to eql(RubySerial::Posix::BAUD_RATES[rate])
     end
   end
 end

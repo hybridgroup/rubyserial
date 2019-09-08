@@ -1,6 +1,24 @@
 # Copyright (c) 2014-2016 The Hybrid Group
+# Copyright (c) 2019 Patrick Plenefisch
+
 
 module RubySerial
+  # @api private
+  # @!visibility private
+  ENOTTY_MAP="ENOTTY"
+  # @api private
+  # @!visibility private
+  module WinC
+    extend FFI::Library
+    ffi_lib 'msvcrt'
+    ffi_convention :stdcall
+
+    attach_function :_open_osfhandle,     [:pointer, :int], :int, blocking: true
+    attach_function :_get_osfhandle,     [:int], :pointer, blocking: true
+  end
+
+  # @api private
+  # @!visibility private
   module Win32
     extend FFI::Library
     ffi_lib 'kernel32'
@@ -267,6 +285,30 @@ module RubySerial
         :odd  => ODDPARITY,
         :even => EVENPARITY
       }
+
+      FLAGS_RTS = 0x3000
+
+      DTR_MASK = 48
+      DTR_ENABLED = 16
+
+      # debug function to return all values as an array
+      def dbg_a
+        [ :dcblength,
+              :baudrate,
+              :flags,
+              :wreserved,
+              :xonlim,
+              :xofflim,
+              :bytesize,
+              :parity,
+              :stopbits,
+              :xonchar,
+              :xoffchar,
+              :errorchar,
+              :eofchar,
+              :evtchar,
+              :wreserved1].map{|x|self[x]}
+      end
     end
 
     class CommTimeouts < FFI::Struct
@@ -275,15 +317,29 @@ module RubySerial
               :read_total_timeout_constant,     :uint32,
               :write_total_timeout_multiplier,  :uint32,
               :write_total_timeout_constant,    :uint32
+
+      # debug function to return all values as an array
+      def dbg_a
+        [:read_interval_timeout,
+              :read_total_timeout_multiplier,
+              :read_total_timeout_constant,
+              :write_total_timeout_multiplier,
+              :write_total_timeout_constant].map{|f| self[f]}
+      end
+
+      READ_MODES = {
+        :blocking => [0, 0, 0],
+        :partial => [2, 0, 0],
+        :nonblocking => [0xffff_ffff, 0, 0]
+      }
     end
 
-    attach_function :CreateFileA,     [:pointer, :uint32, :uint32, :pointer, :uint32, :uint32, :pointer], :pointer, blocking: true
-    attach_function :CloseHandle,     [:pointer], :int, blocking: true
-    attach_function :ReadFile,        [:pointer, :pointer, :uint32, :pointer, :pointer], :int32, blocking: true
-    attach_function :WriteFile,       [:pointer, :pointer, :uint32, :pointer, :pointer], :int32, blocking: true
+    attach_function :SetupComm,       [:pointer, :uint32, :uint32], :int32, blocking: true
     attach_function :GetCommState,    [:pointer, RubySerial::Win32::DCB], :int32, blocking: true
     attach_function :SetCommState,    [:pointer, RubySerial::Win32::DCB], :int32, blocking: true
     attach_function :GetCommTimeouts, [:pointer, RubySerial::Win32::CommTimeouts], :int32, blocking: true
     attach_function :SetCommTimeouts, [:pointer, RubySerial::Win32::CommTimeouts], :int32, blocking: true
+    # TODO, expose this?
+    attach_function :EscapeCommFunction,       [:pointer, :uint32], :int32, blocking: true
   end
 end
