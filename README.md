@@ -65,7 +65,7 @@ The medium level API with {SerialIO} also returns an IO object, but allows you t
 
 The low level API is not considered stable, and may change in minor releases.
 
-See the documentation ! TODO link!!! for more details
+See the yard documentation for more details
 
 **RubySerial::Error**
 
@@ -73,7 +73,12 @@ A wrapper error type that returns the underlying system error code and inherits 
 
 ## Running the tests
 
-The test suite is written using rspec, just use the `rspec` command. There are 3 test files: SerialPort API comatibility `serialport_spec`, Serial API compatability `rubyserial_spec`, and the DTR & timeout correctness test suite `serial_arduino_spec`. The latter requires this !TODO! program flashed to an arduino, or a compatible program that the test can talk to. 
+The test suite is written using rspec, just use the `rspec` command. There are 3 test files: SerialPort API compatibility `serialport_spec`, Serial API compatability `rubyserial_spec`, and the DTR & timeout correctness test suite `serial_arduino_spec`. The latter requires the `spec/arduino.ino` program flashed to an arduino, or a compatible program that the test can talk to. If you wish to test either of the latter, define the enviroment variable `RS_ARDUINO_PORT` to be the arduino serial port. If you wish to run `serialport_spec`, either the `RS_ARDUINO_PORT` or `RS_TEST_PORT` must be defined.
+
+```txt
+$ export RS_ARDUINO_PORT=/dev/ttyUSB0
+$ rspec
+```
 
 ### Test dependencies
 

@@ -6,12 +6,12 @@ require 'timeout'
 describe "serialport api" do
   before do
     @ports = []
+    @port = ENV['RS_TEST_PORT'] || ENV['RS_ARDUINO_PORT']
+    skip "RS_TEST_PORT is undefined. Please define it (or RS_ARDUINO_PORT) to any valid serial port" if @port.nil?
     if RubySerial::ON_WINDOWS
-      @port = "COM1" #TODO...
       @not_a_port = nil
     else
       # Use ttys0 on a mac
-      @port = "/dev/ttyS0"# SerialPort
       @not_a_port = "/dev/null"
       @not_a_file = "/dev/not_a_file"
     end

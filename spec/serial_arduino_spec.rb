@@ -6,12 +6,8 @@ require 'timeout'
 describe "serialport" do
   before do
     @ports = []
-    if RubySerial::ON_WINDOWS
-      @port = "COM3"
-    else
-      # cu.usbserial-???? on a mac (varies)
-      @port = "/dev/ttyUSB0"# SerialPort
-    end
+    @port = ENV['RS_ARDUINO_PORT']
+    skip "RS_ARDUINO_PORT is undefined. Please define it to be the port that the arduino program is attached if you wish to test hupcl behavior." if @port.nil?
     @ser = nil
     begin
       @ser = SerialPort.new(@port, 57600, 8, 1, :none)
@@ -43,33 +39,7 @@ describe "serialport" do
 			expect(dat.length).to be <= 512
 		end
 	end
-=begin
-	it "should test" do
-		puts "start"
-		#@ser.dtr = true
-		p @ser.read(1)
-		p @ser.read(1)
-		p "dtr = false"
-		#@ser.dtr = false
-		p @ser.write("e")
-		p @ser.read(1)
-		p @ser.read(1)
-		p @ser.read(1)
-		p @ser.read(1)
-		p "dtr = true"
-		#@ser.dtr = true
-		p @ser.read(1)
-		p @ser.read(1)
-		p @ser.read(1)
-		p @ser.read(1)
-		p "dtr = false"
-		#@ser.dtr = false
-		p @ser.read(1)
-		p @ser.read(1)
-		p @ser.read(1)
-		p @ser.read(1)
-	end
-=end
+
 	it "should reset" do
 		@ser.hupcl = true
 		@ser.read_nonblock(1024) rescue nil # remove the old garbage if it exists
@@ -81,8 +51,7 @@ describe "serialport" do
 			expect(dat).to eq("z")
 		end
 	end
-	
-	
+
 	it "should not reset" do
 		Timeout::timeout(4) do
 			@ser.hupcl = false
